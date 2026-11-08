@@ -1,0 +1,216 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		5C0B00000000000000000101 /* BaseKit in Frameworks */ = {isa = PBXBuildFile; productRef = 5C0B00000000000000000201 /* BaseKit */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		5C0B00000000000000000301 /* UsualBase.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = UsualBase.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		5C0B00000000000000000302 /* Shared.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Shared.xcconfig; sourceTree = "<group>"; };
+		5C0B00000000000000000303 /* Debug.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Debug.xcconfig; sourceTree = "<group>"; };
+		5C0B00000000000000000304 /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Release.xcconfig; sourceTree = "<group>"; };
+		5C0B00000000000000000305 /* Local.xcconfig.example */ = {isa = PBXFileReference; lastKnownFileType = text; path = Local.xcconfig.example; sourceTree = "<group>"; };
+		5C0B00000000000000000306 /* UsualBase.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = UsualBase.entitlements; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		5C0B00000000000000000401 /* App */ = {isa = PBXFileSystemSynchronizedRootGroup; path = App; sourceTree = "<group>"; };
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		5C0B00000000000000000802 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				5C0B00000000000000000101 /* BaseKit in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		5C0B00000000000000000601 = {
+			isa = PBXGroup;
+			children = (
+				5C0B00000000000000000401 /* App */,
+				5C0B00000000000000000603 /* Config */,
+				5C0B00000000000000000602 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		5C0B00000000000000000602 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				5C0B00000000000000000301 /* UsualBase.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		5C0B00000000000000000603 /* Config */ = {
+			isa = PBXGroup;
+			children = (
+				5C0B00000000000000000302 /* Shared.xcconfig */,
+				5C0B00000000000000000303 /* Debug.xcconfig */,
+				5C0B00000000000000000304 /* Release.xcconfig */,
+				5C0B00000000000000000305 /* Local.xcconfig.example */,
+				5C0B00000000000000000306 /* UsualBase.entitlements */,
+			);
+			path = Config;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		5C0B00000000000000000701 /* UsualBase */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 5C0B00000000000000000902 /* Build configuration list for PBXNativeTarget "UsualBase" */;
+			buildPhases = (
+				5C0B00000000000000000801 /* Sources */,
+				5C0B00000000000000000802 /* Frameworks */,
+				5C0B00000000000000000803 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				5C0B00000000000000000401 /* App */,
+			);
+			name = UsualBase;
+			packageProductDependencies = (
+				5C0B00000000000000000201 /* BaseKit */,
+			);
+			productName = UsualBase;
+			productReference = 5C0B00000000000000000301 /* UsualBase.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		5C0B00000000000000000001 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 2600;
+				LastUpgradeCheck = 2600;
+				TargetAttributes = {
+					5C0B00000000000000000701 = {
+						CreatedOnToolsVersion = 26.0;
+					};
+				};
+			};
+			buildConfigurationList = 5C0B00000000000000000901 /* Build configuration list for PBXProject "UsualBase" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 5C0B00000000000000000601;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				5C0B00000000000000000501 /* XCLocalSwiftPackageReference "Packages/BaseKit" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 5C0B00000000000000000602 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				5C0B00000000000000000701 /* UsualBase */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		5C0B00000000000000000803 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		5C0B00000000000000000801 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		5C0B00000000000000000911 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 5C0B00000000000000000303 /* Debug.xcconfig */;
+			buildSettings = {
+			};
+			name = Debug;
+		};
+		5C0B00000000000000000912 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 5C0B00000000000000000304 /* Release.xcconfig */;
+			buildSettings = {
+			};
+			name = Release;
+		};
+		5C0B00000000000000000921 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+			};
+			name = Debug;
+		};
+		5C0B00000000000000000922 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		5C0B00000000000000000901 /* Build configuration list for PBXProject "UsualBase" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				5C0B00000000000000000911 /* Debug */,
+				5C0B00000000000000000912 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		5C0B00000000000000000902 /* Build configuration list for PBXNativeTarget "UsualBase" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				5C0B00000000000000000921 /* Debug */,
+				5C0B00000000000000000922 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		5C0B00000000000000000501 /* XCLocalSwiftPackageReference "Packages/BaseKit" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/BaseKit;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		5C0B00000000000000000201 /* BaseKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 5C0B00000000000000000501 /* XCLocalSwiftPackageReference "Packages/BaseKit" */;
+			productName = BaseKit;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 5C0B00000000000000000001 /* Project object */;
+}
