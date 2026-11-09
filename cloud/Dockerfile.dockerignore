@@ -1,0 +1,11 @@
+# The build context is the repository root; the image needs only these.
+*
+!cli/
+!skills/
+!cloud/
+cloud/node_modules
+cloud/.wrangler
+cloud/dist
+cloud/data
+cloud/.dev.vars
+cloud/src/generated

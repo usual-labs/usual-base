@@ -10,8 +10,8 @@ Agents read and write the files directly. The app shows them in a file tree, eit
 Markdown source for editing, with front matter as a properties card. When an agent changes a file, the open document updates. The app never
 rewrites text you didn't change.
 
-**Status:** early. It edits a folder on this Mac and can sync it with any git repository over HTTPS. The hosted
-Usual Base (with instant updates) comes later.
+**Status:** early. It edits a folder on this Mac and syncs it with any git repository over HTTPS. A hosted
+service, [base.usual.dev](https://base.usual.dev), is optional and invitation-only for now.
 
 ## What it does
 
@@ -54,6 +54,38 @@ Usual Base (with instant updates) comes later.
 
   The toolbar button shows how syncing is going. Tokens live in the login keychain, not in the repository. A folder
   that is already a git clone only syncs after you turn sync on for it. SSH addresses aren't supported yet.
+
+## Where a Base lives
+
+Pick one per Base; you can move later, since a Base is always just files and git.
+
+- **A folder on this Mac.** Agents on this Mac read and write it directly. Nothing else to set up.
+- **Any git repository:** GitHub, GitLab, Forgejo or Gitea, or a bare repository on your own server. Turn on sync
+  in the app (above), and agents elsewhere clone the same repository. To host it yourself, run Forgejo or Gitea:
+  you get accounts, tokens, protected branches and a web view of the files.
+- **A Usual Base server** (optional): an account at base.usual.dev, described next, or the same server run
+  yourself in Docker with a SQLite file ([cloud/README.md](cloud/README.md#run-it-yourself-with-docker)).
+
+The `usual` CLI helps agents with the first two as well: `usual sync` pulls and pushes a clone, `usual import
+<folder> --to <git url>` pushes an existing knowledge base into an empty repository (`--history` keeps its git
+history, even for a subfolder of a bigger repository), and `usual skill` installs the agent skill. Run it from a
+checkout as `node cli/usual.mjs`; it needs Node.js 18+ and git.
+
+### Hosted Usual Base
+
+[base.usual.dev](https://base.usual.dev) keeps your Bases for you, so you don't need a git account:
+
+- **Dashboard:** sign in to see your Bases, who last changed each one, and every agent and device you connected,
+  each with its own token you can revoke.
+- **Agents:** the dashboard's Connect an agent page gives you a prompt to paste. The agent installs the `usual` CLI
+  and runs `usual connect`; you approve it and choose which Bases it may read or write. Cloud sandboxes that start
+  fresh each time use a token from the dashboard instead.
+- **Your existing knowledge base:** `usual import <folder> --name "<name>"` uploads it as a new Base, with
+  `--history` its git history too, even when it's a subfolder of a bigger repository.
+
+The app and the CLI talk to it through a [small protocol](docs/protocol.md). The server's code is in
+[cloud/](cloud/README.md): one Hono app that runs base.usual.dev on Cloudflare, and runs anywhere else on Node or in
+Docker, with a SQLite file and plain git repositories.
 
 ## Set up your agents
 
@@ -137,6 +169,9 @@ These environment variables work in Debug builds only:
   - saving with conflict copies
   - git sync (`Sources/BaseKit/Git/`), on libgit2 from `Vendor/libgit2` and a small C shim (`Sources/CGitShim`)
 - `App/Sync/`: the sync controller, its background engine, keychain storage and the sync UI.
+- `cloud/`: the Usual Base server, for Cloudflare (base.usual.dev) or Node and Docker ([its README](cloud/README.md)).
+- `cli/usual.mjs`: the `usual` CLI for agents, one file with no dependencies (Node.js 18+ and git).
+- `docs/protocol.md`: what the app and the CLI expect from a Usual Base server.
 - `Config/`: build settings and entitlements.
 - `skills/usual-base/`: the agent skill. Update it whenever agent-facing behaviour changes.
 

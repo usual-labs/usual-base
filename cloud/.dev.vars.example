@@ -1,0 +1,3 @@
+BETTER_AUTH_SECRET=change-me-to-a-random-string-of-32-or-more-characters
+
+SIGNUPS=open

@@ -102,3 +102,51 @@
   address is split off so it never lands in `.git/config`. SSH is deferred: the sandbox can't read `~/.ssh`.
 - **Commit author:** what the setup sheet saved, else the repository's `user.name` and `user.email`, else
   `user@host` as git itself would use. App commits are named after what changed ("Update notes.md", "Add 3 files").
+
+## Hosted service
+
+- **One Hono app, two platforms** (maintainer's request, 2026-11-09): Cloudflare for base.usual.dev, and Node for
+  anyone to run in Docker. The app asks its platform for six things through `Env` (`src/env.ts`): the database,
+  the repositories (`Repos`), publishing and watching push events, the sign-in limit, and background work. Each
+  entry point builds it per request. The push check, the push log and the routes stay shared, so both behave the
+  same; the end-to-end script is the proof for each.
+  - **Node uses libSQL for the SQLite file**, because its Drizzle driver has `batch` like D1's, so the shared
+    queries don't change. Migrations run at startup with Drizzle's migrator.
+  - **Repositories on Node are bare repositories behind `git http-backend`**, git's own CGI server, created with
+    `receive.denyNonFastForwards` and `receive.denyDeletes` as a second line behind the shared push check.
+  - **WebSockets on Node use `ws` directly.** `@hono/node-ws` routes an upgrade through the app with an `env` of
+    its own, which would replace the `Env`; instead the upgrade goes through `app.fetch` with an `Env` whose
+    `watch` marks the request, so the token and Base checks are the same as everywhere.
+  - **The Node server treats every request as addressed to `BASE_URL`**, as `wrangler dev` does with the route's
+    host, so the dashboard's origin check works behind a proxy that terminates TLS.
+- **One Worker serves everything at base.usual.dev:** dashboard, API and git, so agents allowlist one domain
+  (maintainer's choice of domain and of keeping all of it public, 2026-11-08).
+- **Accounts are Better Auth's email and password** (maintainer's choice over WorkOS and Clerk). Forms post to the
+  app's own routes, which call `auth.api` directly; Better Auth's HTTP handler isn't mounted. Those calls skip its
+  rate limit and origin checks, so the routes ask the platform's per-client sign-in limit (`allowAttempt`) and use
+  Hono's `csrf()`.
+- **The database goes through Drizzle** (maintainer's choice, 2026-11-09), Better Auth included, through its
+  Drizzle adapter, so one schema file (`cloud/src/db/schema.ts`) describes every table and drizzle-kit writes the
+  migrations, which Wrangler applies. Drizzle's stable line (0.45 ORM, 0.31 kit), not the 1.0 release candidate,
+  whose migration folders Wrangler doesn't read. Times are Unix milliseconds throughout: Better Auth's as Dates
+  (`timestamp_ms`), Usual Base's own as plain numbers.
+- **Sign-ups are closed unless `SIGNUPS` allows them** ("open" or a list of emails, a Worker secret so no address is
+  in the repository), because every Base is billed to the operator's Cloudflare account. Accounts are capped at
+  50 Bases.
+- **One Artifacts namespace, one repository per Base, named after the Base's id.** A binding is tied to one
+  namespace; per-account namespaces would need the REST API.
+- **Clients never see Artifacts tokens.** They use Usual Base tokens; the git proxy mints short-lived Artifacts
+  tokens per request (cached per isolate). The proxy is needed anyway: Artifacts accepts force pushes and branch
+  deletions (spike, 2026-11-08), and the proxy refuses them by walking the pushed commits back to the old head.
+- **One device flow for the CLI and the apps.** The client shows a code, the person approves it in the dashboard
+  and chooses Bases and access, and the client's poll mints the token then, so no token is stored in plain text.
+- **Live updates come from the proxy, not Queue events:** every push passes through it, it tells the Base's
+  Durable Object directly, and that answers keep-alive pings without waking. Queue events took up to 5 s.
+- **The CLI is one Node file served by the Worker**, embedded at build time with the skill, so there's nothing to
+  publish to npm and the CLI matches the server it came from. Run from a checkout, it installs the checkout's own
+  skill instead.
+- **Open source doesn't need Cloudflare** (maintainer's choice, 2026-11-09). The app, the skill and the CLI's
+  `sync`, `import --to` and `skill` work with any git repository; the app and CLI depend on the documented
+  [server protocol](../protocol.md), not on base.usual.dev. `cloud/` is public too: the code behind base.usual.dev,
+  which also runs on anyone's own server in Docker. Forgejo or Gitea work as well, with accounts, tokens and
+  protected branches.

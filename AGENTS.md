@@ -28,6 +28,11 @@
 - Run `scripts/check.sh --fast` while you work and `scripts/check.sh` before you hand work over.
 - A logic bug gets a BaseKit test that fails first. Text and offset bugs usually need CRLF and multi-byte cases.
   Sync bugs get a `GitSyncTests` case: two Bases and a bare repository in a temporary folder.
+- The server: `npm run check` in `cloud/` type-checks both platforms. Try the CLI against a local server in a
+  throwaway `HOME` (so it doesn't touch your git config): `npm run dev` for Cloudflare (port 8799, its own
+  Artifacts namespace), or `npm run build:node` and `npm start` for Node (settings in `cloud/README.md`, data in a
+  scratch `DATA_DIR`). A change to `src/app.ts`, the routes or `src/git.ts` runs on both, so try both. Never point
+  a test at base.usual.dev's real accounts. `npm run deploy` ships the Cloudflare version.
 - `USUALBASE_NETWORK_TESTS=1` adds the tests that reach GitHub over HTTPS.
 - To see the app, launch a Debug build with `USUALBASE_OPEN`, `USUALBASE_FILE`, `USUALBASE_MODE` and
   `USUALBASE_SNAPSHOT` (README); `USUALBASE_SELECT` selects text, which shows the formatting bar. The snapshot is

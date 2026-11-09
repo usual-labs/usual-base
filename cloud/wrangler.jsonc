@@ -1,0 +1,31 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "usual-base",
+  "main": "src/cloudflare/worker.ts",
+  "compatibility_date": "2026-10-20",
+  "compatibility_flags": ["nodejs_compat"],
+  "routes": [{ "pattern": "base.usual.dev", "custom_domain": true }],
+  "workers_dev": false,
+  "observability": { "enabled": true },
+  "vars": { "BASE_URL": "https://base.usual.dev" },
+  "d1_databases": [{ "binding": "DB", "database_name": "usual-base", "database_id": "d8166b0e-c489-4067-a422-c7cd7737906a", "migrations_dir": "migrations" }],
+  // One namespace holds every Base's repository, named after the Base's id.
+  "artifacts": [{ "binding": "ARTIFACTS", "namespace": "usual-base", "remote": true }],
+  "durable_objects": { "bindings": [{ "name": "BASE_ROOM", "class_name": "BaseRoom" }] },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["BaseRoom"] }],
+  // Sign-in and sign-up attempts per IP address.
+  "ratelimits": [{ "name": "AUTH_LIMIT", "namespace_id": "1001", "simple": { "limit": 10, "period": 60 } }],
+  // Embeds the CLI, its installer and the agent skill from this repository (src/generated/files.ts).
+  "build": { "command": "node scripts/embed.mjs", "watch_dir": ["src", "../cli", "../skills"] },
+  // BETTER_AUTH_SECRET is a Worker secret (wrangler secret put). For wrangler dev, see .dev.vars.example.
+  // `wrangler dev --env dev`: local D1 and Durable Objects, and a separate Artifacts namespace.
+  "env": {
+    "dev": {
+      "vars": { "BASE_URL": "http://localhost:8799" },
+      "d1_databases": [{ "binding": "DB", "database_name": "usual-base", "database_id": "d8166b0e-c489-4067-a422-c7cd7737906a", "migrations_dir": "migrations" }],
+      "artifacts": [{ "binding": "ARTIFACTS", "namespace": "usual-base-dev", "remote": true }],
+      "durable_objects": { "bindings": [{ "name": "BASE_ROOM", "class_name": "BaseRoom" }] },
+      "ratelimits": [{ "name": "AUTH_LIMIT", "namespace_id": "1001", "simple": { "limit": 10, "period": 60 } }]
+    }
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "name": "usual-base-cloud",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler d1 migrations apply usual-base --local --env dev && wrangler dev --env dev --port 8799",
+    "deploy": "wrangler d1 migrations apply usual-base --remote --env=\"\" && wrangler deploy --env=\"\"",
+    "build:node": "node scripts/embed.mjs && esbuild src/node/server.ts --bundle --platform=node --target=node22 --format=esm --packages=external --outfile=dist/server.mjs",
+    "start": "node dist/server.mjs",
+    "db:generate": "drizzle-kit generate",
+    "types": "wrangler types",
+    "check": "node scripts/embed.mjs && wrangler types >/dev/null && tsc --noEmit && tsc --noEmit -p tsconfig.node.json && node --test test/*.test.ts"
+  },
+  "dependencies": {
+    "@hono/node-server": "1.19.17",
+    "@libsql/client": "0.18.0",
+    "better-auth": "1.7.12",
+    "drizzle-orm": "0.45.4",
+    "hono": "4.13.13",
+    "pako": "2.1.0",
+    "ws": "8.22.0"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.5",
+    "@types/pako": "2.0.3",
+    "@types/ws": "8.18.2",
+    "drizzle-kit": "0.31.11",
+    "esbuild": "0.28.2",
+    "typescript": "7.0.2",
+    "wrangler": "4.152.0"
+  }
+}

@@ -65,3 +65,32 @@
 - **View mode renders on the main thread.** Typical notes take milliseconds, but a 218 KB note dense with tables
   and code takes about 0.24 s, which shows as a pause when opening or reloading it.
 - **Copying task boxes or pictures from View mode** gives an object-replacement character (U+FFFC) in plain text.
+
+## Hosted service
+
+- **The Docker image carries drizzle-kit and esbuild (about 50 MB).** Better Auth lists drizzle-kit as an optional
+  peer, so npm keeps it, and what it needs, after `npm prune --omit=dev`; `--omit=peer` doesn't drop it either.
+  The server never loads them. Also left behind: empty scope folders of pruned packages.
+- **`@hono/node-server` types the request's bindings as HTTP/1 or HTTP/2**, so the Node entry casts `incoming` to
+  `IncomingMessage`; it only serves HTTP/1.
+- **`wrangler dev` rewrites the request URL and `Origin` to the route's host** (`http://base.usual.dev`), even
+  with `--env dev`. A CSRF check against `BASE_URL` failed locally; comparing with the request's own origin
+  (Hono's default) works locally and in production.
+- **Drizzle leaves column names unqualified in a single-table query**, including inside `sql` templates, so a
+  correlated subquery's `${tokens.id}` came out as a bare `id` and matched the subquery's own table. Use a join
+  (`listTokens` joins and groups) or qualify the column by hand.
+- **Migrations start at drizzle-kit's `0000_init.sql`.** It replaced a hand-written `0001_init.sql` on
+  2026-11-09, while base.usual.dev's database was still empty: its old tables and `d1_migrations` were dropped and
+  the new migration applied. A local database made before that has to be deleted (`.wrangler/state/v3/d1`).
+- **The first remote D1 call can fail with code 7403** ("account is not valid or is not authorized"), which stops
+  `npm run deploy` before it deploys anything. An immediate retry worked both times it happened (2026-11-09).
+- **Right after a deploy, some requests still reach the previous version** for a few seconds. A smoke test that
+  checks served file contents can fail once; repeat it before suspecting the build.
+- **pako's `Inflate` reads concatenated zlib streams as one**, so it ran past the first object in a git pack.
+  `pack.ts` uses pako's low-level `inflate` with `Z_FINISH` and the object's known size to stop exactly.
+- **A custom `build.command` makes wrangler watch only `watch_dir`**, so `src` has to be listed, and the embed
+  script writes only on a real change, or its own output would set off another build.
+- **`git subtree split` writes progress to stderr;** the CLI reads the commit id from stdout alone. It splits in a
+  scratch clone, since git won't fetch a commit no ref points at.
+- **Artifacts refuses a file over 32 MiB with "remote failed to report status"**, so `usual import` checks sizes
+  itself; history over 50,000 objects is pushed in halving batches.

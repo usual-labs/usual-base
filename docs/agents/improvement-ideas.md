@@ -24,8 +24,11 @@ Deferred work, roughly in the order the product plan needs it. Status is open un
   their authors, so this works for agents that commit under their own names.
 - **Merge the open file's unsaved edits** with a change that arrives from outside, using `git_merge_file`, instead
   of saving them as a conflict copy when the edits don't overlap.
-- **Hosted Usual Base:** live updates over a WebSocket from Cloudflare (Artifacts push events) instead of polling
-  every minute. The plan is in the parent workspace.
+- **Docker image, next:** publish it (GitHub Container Registry, built for arm64 and amd64), a `compose.yaml`
+  with Caddy in front for HTTPS, and a smaller image (see known issues: drizzle-kit and esbuild ride along).
+- **Hosted Usual Base, next:** email verification and password reset (Better Auth hooks plus an email sender),
+  billing and quotas, sharing a Base with other people, a web view of notes, GitHub sign-in, a mobile app on the
+  same device flow, and an npm or binary release of the CLI. The plan is in the parent workspace.
 - **SSH remotes**, with a key the app creates and keeps in the keychain (the sandbox can't read `~/.ssh`).
 - **A URLSession HTTPS transport for libgit2**, if SecureTransport's TLS 1.2 limit or deprecation starts to bite.
 - **Commit messages that say when a replay became a conflict copy.**

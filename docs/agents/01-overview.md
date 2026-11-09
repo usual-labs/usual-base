@@ -10,6 +10,20 @@ folder and reloads when files change outside it.
 real tables, task boxes, code and quote blocks, rules and pictures from the Base. It's read-only, and its links open
 with a plain click. Edit is the styled source editor. The mode is remembered, and the app starts in View.
 
+**Hosted Usual Base (2026-11-09).** `cloud/` is one Hono app (`src/app.ts`) with two entry points: a Cloudflare
+Worker at base.usual.dev (D1, Artifacts, a Durable Object per Base, Workers rate limiting) and a Node server for
+Docker (`cloud/Dockerfile`: a libSQL/SQLite file, bare repositories behind `git http-backend`, WebSockets held in
+the process, an in-memory sign-in limit). Each builds the `Env` in `src/env.ts` per request. It has email-and-password
+accounts (Better Auth, sign-ups limited by the `SIGNUPS` setting; every table through Drizzle), a server-rendered dashboard (Bases, agents
+and devices, Connect an agent, approving a connection), a JSON API, and git at `/git/<base>.git` in front of one
+repository per Base. Tokens (`ubt_…`, hashed) belong to an agent or a device, cover some Bases or all,
+read or read-write. The git proxy refuses force pushes and branch deletions, records each push, and tells the
+apps watching that Base over a WebSocket. `cli/usual.mjs` (served by the server)
+connects with the device flow, clones, syncs, imports a folder (snapshot, or `--history`, also of a subfolder) in
+batches under Artifacts' limits, installs the skill, and is git's credential helper for the server. Without any
+server it still syncs a clone, imports into an empty git repository (`--to <git url>`), and installs the skill
+from the checkout it sits in. [docs/protocol.md](../protocol.md) is what the app and CLI expect from a server. Details: [cloud/README.md](../../cloud/README.md).
+
 **Formatting bar (2026-11-08).** In Edit mode, selecting text shows a bar of format buttons above it, on Liquid
 Glass. The Format menu has the same commands. Each one toggles: it adds the Markdown markers, or takes them off when
 the selection already has the format, and the bar lights up the formats the selection has.
@@ -77,6 +91,35 @@ README's "Set up your agents" prompt hands an agent to that section.
 
 ## Verified
 
+- **Hosted service (2026-11-09):** `npm run check` in `cloud/` (typecheck, 7 unit tests: pack parsing against real
+  git packs, the fast-forward check, report-status, the sign-up rule). An end-to-end script against `wrangler dev`
+  (local D1, real Artifacts namespace `usual-base-dev`) with the CLI in a throwaway HOME passed 31 checks: sign-up,
+  cross-site form post refused, create a Base, `usual connect` approved in the dashboard, clone, private config
+  file, sync, the push shown with the agent's name, force push and branch deletion refused, read-only token clones
+  but gets 403 on push, 401 without a token, a WebSocket event on push, snapshot import with `.gitignore`,
+  `--history` import of a subfolder, skill install, a denied connection, a revoked token refused, deleting a Base.
+  Production smoke test after deploying: pages, `/install.sh`, `/cli/usual.mjs`, `/skill.json`, 401 for the API
+  and git without a token, the sign-up gate (403) and a cross-site post (403).
+- **Node and Docker (2026-11-09):** after the split into `src/app.ts` plus `src/cloudflare/` and `src/node/`,
+  the same 41-check end-to-end script passed against `wrangler dev`, against the Node server (`npm start`, SQLite
+  file in a scratch folder), and against the Docker image (built from the repository root, run as `node` with a
+  named volume). In the container, the account survived a restart, migrations ran once, every Base's repository
+  was gone after the script deleted them, and `docker stop` took under a second. Both type checks pass. Deployed
+  to base.usual.dev the same day (no migration): the production smoke test passed, and the served CLI and skill
+  files match the checkout byte for byte.
+- **CLI without a server (2026-11-09):** a script with the server address on a closed port passed 12 checks:
+  grouped help, the skill installed from the checkout byte for byte, `import --to` a bare repository (snapshot
+  with `.gitignore`, and `--history` of a subfolder), a second import into a repository with history refused
+  with nothing changed, `sync` pushing, rebasing onto another clone's push and pulling with no merge commits, a
+  password in the address not echoed, and server commands asking to connect. The hosted end-to-end script then
+  passed 41 checks, including a CLI downloaded from the server installing the server's skill. Deployed with the
+  platform split (above).
+- **Drizzle (2026-11-09):** after the move to Drizzle, the end-to-end script passed 40 checks twice on a fresh
+  local database: the 31 above plus a token limited to one Base (reads it, 404 on another, named on the agents
+  page), a connection approved for one Base and read only, and deleting every Base it made. drizzle-kit reports no
+  schema changes against the generated migration. Deployed the same day; the production smoke test passed again,
+  plus paths that read the database without writing: an unknown token (401 for the API and git), an unknown
+  device code ("expired"), and signing in to an unknown account (Better Auth's error, not a crash).
 - **Checks:** `scripts/check.sh` passes: swift-format lint, 65 BaseKit tests and an unsigned macOS build, with
   Xcode 27.1 and the macOS 27 SDK; the deployment target is macOS 26.
 - **Sync tests** (two Bases and a bare repository on disk, git CLI as a second opinion): publish byte for byte (BOM
@@ -115,6 +158,7 @@ README's "Set up your agents" prompt hands an agent to that section.
 
 ## Not verified yet
 
+- **The hosted service in use:** nobody has signed up or connected an agent on production yet.
 - **Sync with credentials:** pushing to a private GitHub repository or Cloudflare Artifacts with a token, the
   keychain item (including prompts after rebuilds of an ad-hoc-signed app) and the setup sheet's flow.
 - **Sync at scale:** thousands of files, large first commits, and how long a sync blocks on a slow network.
