@@ -92,5 +92,5 @@
   script writes only on a real change, or its own output would set off another build.
 - **`git subtree split` writes progress to stderr;** the CLI reads the commit id from stdout alone. It splits in a
   scratch clone, since git won't fetch a commit no ref points at.
-- **Artifacts refuses a file over 32 MiB with "remote failed to report status"**, so `usual import` checks sizes
+- **Artifacts refuses a file over 32 MiB with "remote failed to report status"**, so `usual-base import` checks sizes
   itself; history over 50,000 objects is pushed in halving batches.

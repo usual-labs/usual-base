@@ -64,7 +64,7 @@ function parse(argv) {
 async function call(path, { method = "GET", body, auth = true } = {}) {
   const headers = { "content-type": "application/json", "user-agent": `usual-cli/${VERSION}` };
   if (auth) {
-    if (!token()) fail("Not connected. Run `usual connect` first, or set USUAL_BASE_TOKEN.");
+    if (!token()) fail("Not connected. Run `usual-base connect` first, or set USUAL_BASE_TOKEN.");
     headers.authorization = `Bearer ${token()}`;
   }
   const response = await fetch(server + path, { method, headers, body: body && JSON.stringify(body) });
@@ -132,7 +132,7 @@ const commands = {
       if (result.status !== "pending") break;
     }
     if (result?.status === "denied") fail("The connection was denied.");
-    if (result?.status !== "approved") fail("The code expired. Run `usual connect` again.");
+    if (result?.status !== "approved") fail("The code expired. Run `usual-base connect` again.");
     const dir = basesDir(flags);
     writeConfig({ ...config, server, token: result.token, tokenId: result.token_id, name, dir });
     config.token = result.token;
@@ -143,7 +143,7 @@ const commands = {
     console.log(`
 Add these lines to your global instructions (for example ~/.claude/CLAUDE.md or ~/.codex/AGENTS.md):
 
-- Usual Base: ${dir} holds my Bases, git clones of ${server}. Run \`usual sync\` in a Base before reading and after committing.
+- Usual Base: ${dir} holds my Bases, git clones of ${server}. Run \`usual-base sync\` in a Base before reading and after committing.
 - Use the usual-base skill to look things up there before asking, and to save what should outlast this session.`);
   },
 
@@ -156,7 +156,7 @@ Add these lines to your global instructions (for example ~/.claude/CLAUDE.md or 
   async bases({ flags }) {
     const { bases } = await call("/api/bases");
     if (flags.json) return console.log(JSON.stringify(bases, null, 2));
-    if (!bases.length) return console.log("No Bases yet. Create one in the dashboard or with `usual import`.");
+    if (!bases.length) return console.log("No Bases yet. Create one in the dashboard or with `usual-base import`.");
     for (const base of bases) console.log(`${base.id}\t${base.name}`);
   },
 
@@ -165,7 +165,7 @@ Add these lines to your global instructions (for example ~/.claude/CLAUDE.md or 
     const root = basesDir(flags);
     setUpCredentialHelper();
     const chosen = flags.all ? bases : bases.filter((b) => args.includes(b.id) || args.includes(b.name));
-    if (!chosen.length) fail(flags.all ? "This token can't read any Bases yet." : "Name a Base (see `usual bases`), or use --all.");
+    if (!chosen.length) fail(flags.all ? "This token can't read any Bases yet." : "Name a Base (see `usual-base bases`), or use --all.");
     for (const base of chosen) cloneBase(base, root);
   },
 
@@ -191,11 +191,11 @@ Add these lines to your global instructions (for example ~/.claude/CLAUDE.md or 
       if (push.ok) return console.log("Pushed.");
       if (!/rejected|fetch first|stale/i.test(push.out)) fail(`Push failed: ${push.out.trim()}`);
     }
-    fail("Others kept pushing; run `usual sync` again.");
+    fail("Others kept pushing; run `usual-base sync` again.");
   },
 
   async import({ args, flags }) {
-    const folder = resolve(args[0] || fail("Name the folder to import: usual import <folder> --name <name> | --to <git url>"));
+    const folder = resolve(args[0] || fail("Name the folder to import: usual-base import <folder> --name <name> | --to <git url>"));
     if (!statSync(folder, { throwIfNoEntry: false })?.isDirectory()) fail(`${folder} isn't a folder.`);
     const name = typeof flags.name === "string" ? flags.name : folder.split("/").pop();
     const work = mkdtempSync(join(tmpdir(), "usual-import-"));
@@ -211,7 +211,7 @@ Add these lines to your global instructions (for example ~/.claude/CLAUDE.md or 
       console.log(`Created Base "${base.name}" (${base.id}). Pushing…`);
       setUpCredentialHelper();
       pushInBatches(source, base.git);
-      console.log(`Imported. Clone it with \`usual clone ${base.id}\`, or see it at ${server}/bases/${base.id}`);
+      console.log(`Imported. Clone it with \`usual-base clone ${base.id}\`, or see it at ${server}/bases/${base.id}`);
     } finally {
       rmSync(work, { recursive: true, force: true });
     }
@@ -354,19 +354,19 @@ function pushInBatches({ gitDir, head }, url) {
 const help = `Usual Base CLI ${VERSION}
 
 With any git repository (GitHub, GitLab, Forgejo, a bare repository…):
-  usual sync [PATH]                         pull, then push your commits
-  usual import <folder> --to GIT_URL [--history]
-                                            push an existing knowledge base into an empty repository
-  usual skill [--to DIR]                    install the usual-base agent skill
+  usual-base sync [PATH]                         pull, then push your commits
+  usual-base import <folder> --to GIT_URL [--history]
+                                                 push an existing knowledge base into an empty repository
+  usual-base skill [--to DIR]                    install the usual-base agent skill
 
 With a Usual Base server (${server}):
-  usual connect [--name NAME] [--dir DIR]   connect this machine; you approve it in the browser
-  usual bases                               list the Bases this token can read
-  usual clone <base>… | --all [--dir DIR]   clone Bases (default folder: ~/Usual Base)
-  usual import <folder> --name NAME [--history]
-                                            create a Base from an existing knowledge base
-  usual path <base>                         print where a Base is cloned
-  usual whoami | logout
+  usual-base connect [--name NAME] [--dir DIR]   connect this machine; you approve it in the browser
+  usual-base bases                               list the Bases this token can read
+  usual-base clone <base>… | --all [--dir DIR]   clone Bases (default folder: ~/Usual Base)
+  usual-base import <folder> --name NAME [--history]
+                                                 create a Base from an existing knowledge base
+  usual-base path <base>                         print where a Base is cloned
+  usual-base whoami | logout
 
 --history keeps the folder's git history, even for a subfolder of a bigger repository.
 USUAL_BASE_TOKEN, USUAL_BASE_SERVER and USUAL_BASE_DIR override the saved settings.`;

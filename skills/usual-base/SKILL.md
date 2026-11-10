@@ -18,7 +18,7 @@ What Usual Base gives you today. Anything not listed here doesn't exist yet.
 | Properties | Front matter at the top of a note becomes a card in the app. | [references/markdown.md](references/markdown.md) |
 | Rendered view | People mostly read your notes rendered: tables, tasks, code, links, pictures. | [references/markdown.md](references/markdown.md) |
 | Sync and history | Optional git sync. History records who changed what. | [references/sync.md](references/sync.md) |
-| Hosted Bases | Bases on base.usual.dev, reached with the `usual` CLI and your own token. | [references/sync.md](references/sync.md#hosted-bases) |
+| Hosted Bases | Bases on base.usual.dev, reached with the `usual-base` CLI and your own token. | [references/sync.md](references/sync.md#hosted-bases) |
 | Conflict copies | A clash never loses text; it leaves a copy to merge. | Below |
 
 ## Find the Base
@@ -106,9 +106,9 @@ unless the user says so.
 
 1. **Find the Base.** The user gives you a folder on this machine, the Base's git URL, or their hosted Usual Base.
    - **Hosted Usual Base** (base.usual.dev): install the CLI (`curl -fsSL https://base.usual.dev/install.sh | sh`)
-     and run `usual connect --name "<your platform> on <this machine>"`. Show the user the link and code it prints
-     and wait while they approve. It clones every Base you may use into `~/Usual Base/`, installs this skill and
-     prints the lines for step 3, so skip step 2.
+     and run `usual-base connect --name "<your platform> on <this machine>"`. Show the user the link and code it
+     prints and wait while they approve. It clones every Base you may use into `~/Usual Base/`, installs this skill
+     and prints the lines for step 3, so skip step 2.
    - For a URL, clone it to a stable place, such as `~/Bases/<name>`, or wherever the user prefers.
    - If the clone needs credentials, ask the user for a token. Ideally each agent gets its own token, with
      write access only if it should write. Handle it as described under "Credentials" in

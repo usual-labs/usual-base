@@ -66,10 +66,10 @@ Pick one per Base; you can move later, since a Base is always just files and git
 - **A Usual Base server** (optional): an account at base.usual.dev, described next, or the same server run
   yourself in Docker with a SQLite file ([cloud/README.md](cloud/README.md#run-it-yourself-with-docker)).
 
-The `usual` CLI helps agents with the first two as well: `usual sync` pulls and pushes a clone, `usual import
-<folder> --to <git url>` pushes an existing knowledge base into an empty repository (`--history` keeps its git
-history, even for a subfolder of a bigger repository), and `usual skill` installs the agent skill. Run it from a
-checkout as `node cli/usual.mjs`; it needs Node.js 18+ and git.
+The `usual-base` CLI helps agents with the first two as well: `usual-base sync` pulls and pushes a clone,
+`usual-base import <folder> --to <git url>` pushes an existing knowledge base into an empty repository (`--history`
+keeps its git history, even for a subfolder of a bigger repository), and `usual-base skill` installs the agent
+skill. Run it from a checkout as `node cli/usual-base.mjs`; it needs Node.js 18+ and git.
 
 ### Hosted Usual Base
 
@@ -77,10 +77,10 @@ checkout as `node cli/usual.mjs`; it needs Node.js 18+ and git.
 
 - **Dashboard:** sign in to see your Bases, who last changed each one, and every agent and device you connected,
   each with its own token you can revoke.
-- **Agents:** the dashboard's Connect an agent page gives you a prompt to paste. The agent installs the `usual` CLI
-  and runs `usual connect`; you approve it and choose which Bases it may read or write. Cloud sandboxes that start
-  fresh each time use a token from the dashboard instead.
-- **Your existing knowledge base:** `usual import <folder> --name "<name>"` uploads it as a new Base, with
+- **Agents:** the dashboard's Connect an agent page gives you a prompt to paste. The agent installs the `usual-base`
+  CLI and runs `usual-base connect`; you approve it and choose which Bases it may read or write. Cloud sandboxes
+  that start fresh each time use a token from the dashboard instead.
+- **Your existing knowledge base:** `usual-base import <folder> --name "<name>"` uploads it as a new Base, with
   `--history` its git history too, even when it's a subfolder of a bigger repository.
 
 The app and the CLI talk to it through a [small protocol](docs/protocol.md). The server's code is in
@@ -170,7 +170,7 @@ These environment variables work in Debug builds only:
   - git sync (`Sources/BaseKit/Git/`), on libgit2 from `Vendor/libgit2` and a small C shim (`Sources/CGitShim`)
 - `App/Sync/`: the sync controller, its background engine, keychain storage and the sync UI.
 - `cloud/`: the Usual Base server, for Cloudflare (base.usual.dev) or Node and Docker ([its README](cloud/README.md)).
-- `cli/usual.mjs`: the `usual` CLI for agents, one file with no dependencies (Node.js 18+ and git).
+- `cli/usual-base.mjs`: the `usual-base` CLI for agents, one file with no dependencies (Node.js 18+ and git).
 - `docs/protocol.md`: what the app and the CLI expect from a Usual Base server.
 - `Config/`: build settings and entitlements.
 - `skills/usual-base/`: the agent skill. Update it whenever agent-facing behaviour changes.

@@ -1,11 +1,11 @@
 # The Usual Base server protocol
 
-What the Mac app and the `usual` CLI expect from a Usual Base server. [base.usual.dev](https://base.usual.dev) is
-one; its code is in [cloud/](../cloud/README.md), which also runs in Docker. Any server that answers these requests
-works with both: point the CLI at it with `USUAL_BASE_SERVER`, and a Debug build of the app with
+What the Mac app and the `usual-base` CLI expect from a Usual Base server. [base.usual.dev](https://base.usual.dev)
+is one; its code is in [cloud/](../cloud/README.md), which also runs in Docker. Any server that answers these
+requests works with both: point the CLI at it with `USUAL_BASE_SERVER`, and a Debug build of the app with
 `USUALBASE_SERVER`.
 
-You don't need a server at all to use Usual Base: the app, the skill and `usual sync` work with any git
+You don't need a server at all to use Usual Base: the app, the skill and `usual-base sync` work with any git
 repository. A server adds accounts, per-agent tokens, the list of your Bases, and live updates.
 
 ## Tokens
@@ -108,5 +108,5 @@ app keeps polling.
 ## Optional
 
 - **`GET /skill.json`**: `{ "files": { "SKILL.md": "…", "references/sync.md": "…" } }`, the agent skill, for
-  `usual skill` run from a CLI that isn't in a checkout of this repository.
-- **`GET /install.sh`** and **`GET /cli/usual.mjs`**: the CLI, set up to talk to this server.
+  `usual-base skill` run from a CLI that isn't in a checkout of this repository.
+- **`GET /install.sh`** and **`GET /cli/usual-base.mjs`**: the CLI, set up to talk to this server.

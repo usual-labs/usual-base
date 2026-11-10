@@ -91,7 +91,7 @@ export const tokenBases = sqliteTable("token_bases", {
   baseId: text("base_id").notNull().references(() => bases.id, { onDelete: "cascade" }),
 }, (t) => [primaryKey({ columns: [t.tokenId, t.baseId] })]);
 
-/** The device flow (`usual connect`, the Mac app): a client asks, a signed-in person approves. */
+/** The device flow (`usual-base connect`, the Mac app): a client asks, a signed-in person approves. */
 export const connectRequests = sqliteTable("connect_requests", {
   /** SHA-256 of the device code the client polls with. */
   deviceHash: text("device_hash").primaryKey(),

@@ -21,13 +21,13 @@ Each entry point builds the `Env` in `src/env.ts` for every request; everything 
   schema, `src/db/schema.ts`, and one set of migrations for both platforms. Better Auth uses its Drizzle adapter
   on the same tables.
 - **Agents and apps** use their own tokens (`ubt_…`), which the person approves in the dashboard (the device flow
-  behind `usual connect` and the Mac app's Sign In) or creates there for sandboxes. Only a SHA-256 hash is stored.
-  A token covers some Bases or all, read only or read and write, and can be revoked.
+  behind `usual-base connect` and the Mac app's Sign In) or creates there for sandboxes. Only a SHA-256 hash is
+  stored. A token covers some Bases or all, read only or read and write, and can be revoked.
 - **Git** goes through `/git/<base>.git` (`src/git.ts`): it checks the token, refuses force pushes, branch
   deletions and anything but branches, passes the request to the Base's repository, records who pushed, and
   tells the apps watching.
-- **The CLI and the agent skill** (`../cli/usual.mjs`, `../skills/usual-base/`) are served at `/install.sh`,
-  `/cli/usual.mjs` and `/skill.json`, embedded at build time by `scripts/embed.mjs`.
+- **The CLI and the agent skill** (`../cli/usual-base.mjs`, `../skills/usual-base/`) are served at `/install.sh`,
+  `/cli/usual-base.mjs` and `/skill.json`, embedded at build time by `scripts/embed.mjs`.
 
 ## Run it yourself with Docker
 

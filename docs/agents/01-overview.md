@@ -18,7 +18,7 @@ accounts (Better Auth, sign-ups limited by the `SIGNUPS` setting; every table th
 and devices, Connect an agent, approving a connection), a JSON API, and git at `/git/<base>.git` in front of one
 repository per Base. Tokens (`ubt_…`, hashed) belong to an agent or a device, cover some Bases or all,
 read or read-write. The git proxy refuses force pushes and branch deletions, records each push, and tells the
-apps watching that Base over a WebSocket. `cli/usual.mjs` (served by the server)
+apps watching that Base over a WebSocket. `cli/usual-base.mjs` (served by the server)
 connects with the device flow, clones, syncs, imports a folder (snapshot, or `--history`, also of a subfolder) in
 batches under Artifacts' limits, installs the skill, and is git's credential helper for the server. Without any
 server it still syncs a clone, imports into an empty git repository (`--to <git url>`), and installs the skill
@@ -94,7 +94,7 @@ README's "Set up your agents" prompt hands an agent to that section.
 - **Hosted service (2026-11-09):** `npm run check` in `cloud/` (typecheck, 7 unit tests: pack parsing against real
   git packs, the fast-forward check, report-status, the sign-up rule). An end-to-end script against `wrangler dev`
   (local D1, real Artifacts namespace `usual-base-dev`) with the CLI in a throwaway HOME passed 31 checks: sign-up,
-  cross-site form post refused, create a Base, `usual connect` approved in the dashboard, clone, private config
+  cross-site form post refused, create a Base, `usual-base connect` approved in the dashboard, clone, private config
   file, sync, the push shown with the agent's name, force push and branch deletion refused, read-only token clones
   but gets 403 on push, 401 without a token, a WebSocket event on push, snapshot import with `.gitignore`,
   `--history` import of a subfolder, skill install, a denied connection, a revoked token refused, deleting a Base.
@@ -107,6 +107,11 @@ README's "Set up your agents" prompt hands an agent to that section.
   was gone after the script deleted them, and `docker stop` took under a second. Both type checks pass. Deployed
   to base.usual.dev the same day (no migration): the production smoke test passed, and the served CLI and skill
   files match the checkout byte for byte.
+- **The CLI renamed `usual-base` (2026-11-10):** the end-to-end script, now installing the CLI through the
+  server's `install.sh`, passed 47 checks against `wrangler dev` and against the Node server, including that
+  nothing named `usual` is installed and `/cli/usual.mjs` answers 404. The 12 checks without a server passed too.
+  Deployed the same day (no migration). On production, `/cli/usual.mjs` answers 404, the served CLI, installer
+  and skill match the checkout byte for byte, and the installer puts `usual-base` in a scratch folder.
 - **CLI without a server (2026-11-09):** a script with the server address on a closed port passed 12 checks:
   grouped help, the skill installed from the checkout byte for byte, `import --to` a bare repository (snapshot
   with `.gitignore`, and `--history` of a subfolder), a second import into a repository with history refused

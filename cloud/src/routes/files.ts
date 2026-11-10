@@ -11,7 +11,7 @@ files.get("/install.sh", (c) =>
   }),
 );
 
-files.get("/cli/usual.mjs", (c) =>
+files.get("/cli/usual-base.mjs", (c) =>
   c.body(cli.replace('"https://base.usual.dev"', JSON.stringify(c.env.BASE_URL)), 200, {
     "content-type": "text/javascript; charset=utf-8",
   }),

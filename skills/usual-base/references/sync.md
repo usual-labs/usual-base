@@ -49,9 +49,9 @@ git push                          # refused? git pull --rebase, then git push ag
 ```
 
 - Pull at the start of a session and push before it ends, so others see your work.
-- **Bringing in an existing knowledge base,** with the user's OK: `usual import <folder> --to <git url>` pushes it
-  into an empty repository (its `.gitignore` applies; `--history` keeps its git history, even for a subfolder of a
-  bigger repository). The `usual` CLI is `cli/usual.mjs` in the Usual Base repository (Node.js 18+).
+- **Bringing in an existing knowledge base,** with the user's OK: `usual-base import <folder> --to <git url>` pushes
+  it into an empty repository (its `.gitignore` applies; `--history` keeps its git history, even for a subfolder of
+  a bigger repository). The `usual-base` CLI is `cli/usual-base.mjs` in the Usual Base repository (Node.js 18+).
 - Rebase, don't merge; the Base's history is a straight line.
 - Never force-push. It would delete other people's and agents' work.
 - **If a rebase stops on a conflict:**
@@ -75,14 +75,15 @@ git push                          # refused? git pull --rebase, then git push ag
 
 Bases on hosted Usual Base (base.usual.dev) are git repositories at `https://base.usual.dev/git/<base>.git`.
 
-- **The `usual` CLI handles the token.** `usual connect` saves your token in `~/.config/usual-base/` and makes
-  itself git's credential helper for base.usual.dev, so plain `git pull` and `git push` work. Never copy the token
-  anywhere else. In a sandbox the token comes from the `USUAL_BASE_TOKEN` environment variable instead.
-- **Commands:** `usual bases` lists what you may read; `usual clone <base>` (or `--all`) clones into
-  `~/Usual Base/`; `usual sync` pulls, then pushes your commits; `usual path <base>` prints where a Base is.
-- **Creating a Base from an existing knowledge base:** `usual import <folder> --name "<name>"` uploads the folder
-  (its `.gitignore` applies), or with `--history` its git history, even for a subfolder of a bigger repository.
-  Ask the user before importing: it creates a Base they'll see, and files over 32 MiB can't be stored.
+- **The `usual-base` CLI handles the token.** `usual-base connect` saves your token in `~/.config/usual-base/` and
+  makes itself git's credential helper for base.usual.dev, so plain `git pull` and `git push` work. Never copy the
+  token anywhere else. In a sandbox the token comes from the `USUAL_BASE_TOKEN` environment variable instead.
+- **Commands:** `usual-base bases` lists what you may read; `usual-base clone <base>` (or `--all`) clones into
+  `~/Usual Base/`; `usual-base sync` pulls, then pushes your commits; `usual-base path <base>` prints a Base's
+  folder.
+- **Creating a Base from an existing knowledge base:** `usual-base import <folder> --name "<name>"` uploads the
+  folder (its `.gitignore` applies), or with `--history` its git history, even for a subfolder of a bigger
+  repository. Ask the user before importing: it creates a Base they'll see, and files over 32 MiB can't be stored.
 - **The server refuses force pushes and branch deletions.** If a push is refused as "not a fast-forward",
   pull with rebase and push again.
 - **What your token can do** is up to the user: some Bases or all, read only or read and write. A 403 on push means

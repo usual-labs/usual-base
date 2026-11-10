@@ -142,9 +142,13 @@
   and chooses Bases and access, and the client's poll mints the token then, so no token is stored in plain text.
 - **Live updates come from the proxy, not Queue events:** every push passes through it, it tells the Base's
   Durable Object directly, and that answers keep-alive pings without waking. Queue events took up to 5 s.
-- **The CLI is one Node file served by the Worker**, embedded at build time with the skill, so there's nothing to
+- **The CLI is one Node file served by the server**, embedded at build time with the skill, so there's nothing to
   publish to npm and the CLI matches the server it came from. Run from a checkout, it installs the checkout's own
   skill instead.
+- **The command is `usual-base`, not `usual`** (maintainer's choice, 2026-11-10). Usual is the whole lab, and its
+  other CLI is `usual-ui`. The name matches the repository, the skill, `~/.config/usual-base/` and the
+  `USUAL_BASE_*` settings. If the lab ever wants one `usual` command, `usual base …` can hand off to `usual-base`
+  the way `git foo` runs `git-foo`.
 - **Open source doesn't need Cloudflare** (maintainer's choice, 2026-11-09). The app, the skill and the CLI's
   `sync`, `import --to` and `skill` work with any git repository; the app and CLI depend on the documented
   [server protocol](../protocol.md), not on base.usual.dev. `cloud/` is public too: the code behind base.usual.dev,

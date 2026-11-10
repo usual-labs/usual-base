@@ -9,7 +9,7 @@ const repo = join(cloud, "..");
 const read = (path) => readFileSync(join(repo, path), "utf8");
 
 const files = {
-  cli: read("cli/usual.mjs"),
+  cli: read("cli/usual-base.mjs"),
   installScript: read("cloud/src/install.sh"),
   skill: {
     "SKILL.md": read("skills/usual-base/SKILL.md"),

@@ -1,5 +1,5 @@
 // The device flow (RFC 8628 in spirit): a client without a browser session asks for a code, the person
-// approves it in the dashboard, and the client's polling then receives a token. Used by `usual connect`
+// approves it in the dashboard, and the client's polling then receives a token. Used by `usual-base connect`
 // and by the Mac app's Sign In.
 
 import { and, eq, gt, lt } from "drizzle-orm";

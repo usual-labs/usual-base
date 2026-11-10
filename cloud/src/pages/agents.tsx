@@ -42,7 +42,7 @@ export function ConnectAgent(props: { user: User; baseURL: string; bases: Base[]
   const prompt = `Connect yourself to my Usual Base, a shared Markdown knowledge base that I read in the Usual Base app and my agents read and write as plain files.
 
 1. Install the Usual Base CLI: curl -fsSL ${props.baseURL}/install.sh | sh
-2. Run: usual connect --name "<your platform> on <this machine>"
+2. Run: usual-base connect --name "<your platform> on <this machine>"
    It prints a link and a code. Show them to me and wait while I approve; it then clones my Bases and installs the usual-base skill.
 3. Add the lines it prints to your global instructions, show me what you added, and list the Bases you can read.`;
   return (
@@ -87,7 +87,7 @@ export function BaseChoice(props: { bases: Base[] }) {
 export function TokenCreated(props: { user: User; name: string; secret: string; baseURL: string }) {
   const setup = `# Setup script (USUAL_BASE_TOKEN comes from the platform's secrets)
 curl -fsSL ${props.baseURL}/install.sh | sh
-~/.local/bin/usual clone --all`;
+~/.local/bin/usual-base clone --all`;
   return (
     <Page title="Token created" user={props.user}>
       <h1>Token for {props.name}</h1>
