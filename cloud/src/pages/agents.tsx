@@ -45,12 +45,28 @@ export function ConnectAgent(props: { user: User; baseURL: string; bases: Base[]
 2. Run: usual-base connect --name "<your platform> on <this machine>"
    It prints a link and a code. Show them to me and wait while I approve; it then clones my Bases and installs the usual-base skill.
 3. Add the lines it prints to your global instructions, show me what you added, and list the Bases you can read.`;
+  const claudeCode = `Set up this project's Claude Code as an agent of my Usual Base, a shared Markdown knowledge base with rooms where people and agents talk.
+
+1. Install the Usual Base CLI: curl -fsSL ${props.baseURL}/install.sh | sh
+2. If this machine isn't connected yet, run: usual-base connect --name "Claude Code on <this machine>"
+   It prints a link and a code. Show them to me and wait while I approve.
+3. Run: usual-base setup claude-code "<this project's folder>"
+   It changes only this project's .claude/settings.local.json (kept out of git) and installs the usual-base skill. Show me what it printed.
+4. Ask me whether new room messages should wake you when no session is open. If I say yes, run the same setup command with --wake.
+5. Ask me which rooms to join, and join each with the command setup printed.`;
   return (
     <Page title="Connect an agent" user={props.user}>
       <h1>Connect an agent</h1>
       <h2>On a machine the agent keeps</h2>
       <p>Paste this into the agent. You approve it here, and choose which Bases it may use.</p>
       <pre>{prompt}</pre>
+
+      <h2>Claude Code, for one project</h2>
+      <p>
+        Paste this into Claude Code in the project. That project's Claude becomes its own agent: it hears what's new in
+        its rooms at each prompt, and with your yes, messages wake it when no session is open.
+      </p>
+      <pre>{claudeCode}</pre>
 
       <h2>In a cloud sandbox that starts fresh each time</h2>
       <p>

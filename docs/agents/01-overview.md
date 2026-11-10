@@ -22,9 +22,32 @@ apps watching that Base over a WebSocket. The CLI (`cli/`, served bundled into o
 and `ubase`)
 connects with the device flow, clones, syncs, makes a folder a Base where it is (`init`), imports a folder (snapshot, or `--history`, also of a subfolder) in
 batches under Artifacts' limits, installs the skill, updates itself and the installed skills (`update`, and a daily
-check that asks first), checks the setup (`doctor`), and is git's credential helper for the server. Without any
+check that asks first), checks the setup (`doctor`), runs rooms (`room`, below), and is git's credential helper for the server. Without any
 server it still syncs a clone, imports into an empty git repository (`--to <git url>`), and installs the skill
 from the checkout it sits in. [docs/protocol.md](../protocol.md) is what the app and CLI expect from a server. Details: [cloud/README.md](../../cloud/README.md).
+
+**Rooms (2026-11-10, CLI only).** `cli/lib/rooms.mjs`: a room is a folder under `Rooms/` with a `ROOM.md` and one
+Markdown file per message in a folder per UTC day, named `<UTC time to the ms>_<writer>_<random>.md`, with front
+matter `from`, `at`, `seen` (the newest message the writer had read) and `re`. `room say` pulls, refuses while the
+writer has unread messages (and shows them), writes the file at least 1 ms after the newest message, commits only
+that file under the writer's name and pushes with the same retry as `sync`. Each reader's place is the commit they
+had read up to, kept per reader name in `.git/usual-base/rooms.json`; new messages are the files git added since
+then, so a writer's clock can't hide one. `room wait` uses a hosted Base's push events, or polls. The format is the
+skill's `references/rooms.md`; the server and the app don't know about rooms (the app shows the files as notes).
+
+**Members, news and waking (2026-11-10, CLI only).** `cli/lib/room-store.mjs` holds the files and bookkeeping and
+`rooms.mjs` the commands. A member is one file in `Rooms/<room>/members/` (name in its front matter), so joins never
+conflict; `room join | leave`. `room news` lists what's new in your rooms and prints nothing otherwise (`--intro`
+adds who you are and how to treat messages); it pulls at most every 30 s. The loop brake: no wake once the last 10
+messages all came from members. `sync -m` commits every change under the writer's name. `cli/lib/claude-code.mjs`:
+`setup claude-code <folder>` registers an agent (`config.agents`: platform, folder, name, Base, wake, Claude's path)
+and puts one hook command (SessionStart and UserPromptSubmit) into `.claude/settings.local.json` at the repository
+root and in nested repositories, kept out of git with `.git/info/exclude`; `hook claude-code` reads the hook JSON
+and speaks for the deepest set-up project above the session's folder. `cli/lib/relay.mjs`: `relay` wakes agents set
+up with `--wake`: on a push event (hosted) or a poll it runs `claude -p` in the project, one session per room
+(`--session-id`, then `--resume`), with `--add-dir` the Base and `--allowedTools` `Bash(usual-base *)`,
+`Read`/`Edit` under the Base; never for the agent's own message or messages it already read, one run at a time, at
+most 20 an hour; `relay install` makes it a launchd or systemd login service.
 
 **Formatting bar (2026-11-08).** In Edit mode, selecting text shows a bar of format buttons above it, on Liquid
 Glass. The Format menu has the same commands. Each one toggles: it adds the Markdown markers, or takes them off when
@@ -41,8 +64,10 @@ ordinary clone (`.git` inside). Sync is opt-in per Base (`usualbase.sync` in the
 hosted service, account or history view yet.
 
 **Agent skill and setup prompt (2026-11-07).** `skills/usual-base/` teaches agents to find, read, search and
-write a Base, how notes render, and how sync and conflict copies work. It also has a "Set up" section. The
-README's "Set up your agents" prompt hands an agent to that section.
+write a Base, how notes render, how sync and conflict copies work, and rooms (`references/rooms.md`, with links
+to notes from the Base's root). The one-time setup is in `references/setup.md` (moved out of `SKILL.md`
+2026-11-10, a third of what loads every time); `SKILL.md`'s short "Set up" section points there, so the README's
+"Set up your agents" prompt still works.
 
 ### How the pieces fit
 
@@ -133,6 +158,29 @@ README's "Set up your agents" prompt hands an agent to that section.
   `init` (no migration; the first try hit D1's 7403 and the retry worked). On production the served CLI matches the
   bundle built from the checkout, the installer and skill match the checkout, `/cli/usual.mjs` is 404, and a fresh
   install in a scratch home gets `ubase`, a clean `doctor` (exit 0) and an `update` with nothing to do.
+- **Rooms (2026-11-10):** a 31-check script with two agents, each with its own home and clone, passed against a bare
+  repository (no server), the Node server and `wrangler dev`: create and list; the first post into an empty room; a
+  millisecond file name in the day's folder; `say` refusing (exit 3) and showing the unread message, then posting
+  with `seen` set; `read` showing only others' new messages; three quick posts as three files; `--re` and `--json`;
+  a reply sorting after a message stamped an hour ahead; a message stamped years back still found as new; only the
+  message file committed around other edits; two agents posting at once (both pushed, each sees the other's); `wait`
+  waking 217 ms (Node) and 622 ms (Cloudflare, real Artifacts) after the other agent's post returned, and by polling
+  elsewhere; `wait` timing out with exit 2; finding the Base, and not taking a project repository for one. The
+  earlier 47, 33, 37 and 12 checks still pass. Not deployed yet.
+- **Claude Code setup and waking (2026-11-10):** a 36-check script (bare repository, a stand-in for `claude`, the
+  relay polling every second) passed: setup writes only the repository root's and a nested repository's local
+  settings, keeps their own permissions and hooks, excludes them from git, installs the skill, writes nothing
+  global, and changes nothing when run again; the hook speaks for the deepest set-up project and is silent outside;
+  join, member files, news before and after reading; `sync -m` commits as the agent; the relay wakes once per
+  person's message in the project folder as the agent, in a new session, then resumes it once after two messages
+  during a run; not for its own message or a room it isn't in; the loop brake and its lifting; the hourly limit;
+  `relay status`; `--remove` keeps a hook still used by another project and otherwise takes it out. On the Node
+  server the relay woke on a push event 394 ms after the post. Earlier suites still pass (rooms 31 on plain and
+  Node, end-to-end 47, init 33, upkeep 37, no server 12). **A real wake (2026-11-10, with the maintainer's OK):**
+  Claude Code 2.1.311, woken by the relay in a throwaway project (polling every 2 s), started 2 s after a person's
+  post, read the room, replied in 14 s ("pong — Hello from the Base", `seen` set), read a note by its root path,
+  appended a line to it and saved it with `sync -m`; both commits are under the agent's name, and nothing in the
+  project changed. Not run: `relay install` (only `--dry-run`), Linux.
 - **CLI without a server (2026-11-09):** a script with the server address on a closed port passed 12 checks:
   grouped help, the skill installed from the checkout byte for byte, `import --to` a bare repository (snapshot
   with `.gitignore`, and `--history` of a subfolder), a second import into a repository with history refused

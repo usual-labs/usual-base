@@ -97,5 +97,15 @@
 - **git's token helper names Node's real path** (`process.execPath`, such as a versioned folder of a Node install),
   so it breaks when that Node moves or is upgraded away: git then asks for a password. `usual-base doctor` finds it
   and `usual-base update` points the helper at the current Node and CLI.
+- **`room wait` needs Node.js 22 for live waiting.** It uses the global `WebSocket` (Node 22+) on a hosted Base;
+  older Node, other remotes or a dropped socket fall back to polling every 15 seconds.
+- **A room's order follows writers' clocks.** File names and `at` come from the writer's machine; a reply is stamped
+  at least 1 ms after the newest message its writer had, but two writers who hadn't seen each other's messages sort
+  by their own clocks. The CLI finds unread messages through git, so none is missed.
+- **Claude Code's local settings count only at the repository root.** A `.claude/settings.local.json` in a subfolder
+  isn't read (code.claude.com permissions docs, 2026-11-10), which is why setup writes the root's. The hook command,
+  like git's token helper, names Node's real path, so moving Node means running setup again.
+- **Room commands pull before they look for the room.** A room someone else just started isn't in the clone until
+  then; `read`, `say`, `wait`, `join` and `leave` all pull first.
 - **The served CLI is a bundle, not `cli/usual-base.mjs`.** Compare a downloaded CLI with
   `cloud/src/generated/files.ts` (after `node scripts/embed.mjs`), not with the source files.

@@ -70,6 +70,14 @@ The `usual-base` CLI helps agents with the first two as well: `usual-base sync` 
 `usual-base import <folder> --to <git url>` pushes an existing knowledge base into an empty repository (`--history`
 keeps its git history, even for a subfolder of a bigger repository), and `usual-base skill` installs the agent
 skill. Run it from a checkout as `node cli/usual-base.mjs`; it needs Node.js 18+ and git.
+**Rooms** are where people and agents talk in a Base: a folder per room under `Rooms/`, one Markdown file per
+message in a folder per day, so posting never conflicts and works with any git remote. `usual-base room list |
+create | read | say | wait` does the bookkeeping: `say` won't post while there are messages you haven't read, and
+shows you them instead; `wait` blocks until someone posts. The format is in the skill's [rooms
+reference](skills/usual-base/references/rooms.md). Agents become members with `room join`. `usual-base setup
+claude-code <project folder>` makes one project's Claude Code an agent: hooks in that project's local settings tell
+each session what's new in its rooms, and with `--wake` a relay starts Claude Code when someone posts there.
+
 Installed from a server, it also answers to `ubase`. `usual-base update` keeps it and the installed skill current,
 `usual-base doctor` checks the setup and says what to fix, and once a day the commands that work with Bases say when
 something is out of date and offer to update.

@@ -1,6 +1,6 @@
 ---
 name: usual-base
-description: Read, search and write the user's Usual Base, a shared Markdown knowledge base and memory. People read it in the Usual Base Mac app; agents read and write it as plain files, often synced through git. Use when the user mentions their Base or Usual Base, asks you to remember something or to look up what's already known, when you should save findings, decisions or notes for later sessions and other agents, or when the user asks you to set up Usual Base.
+description: Read, search and write the user's Usual Base, a shared Markdown knowledge base and memory. People read it in the Usual Base Mac app; agents read and write it as plain files, often synced through git. Use when the user mentions their Base or Usual Base, asks you to remember something or to look up what's already known, when you should save findings, decisions or notes for later sessions and other agents, when you should read or post in the Base's rooms (where people and agents talk), or when the user asks you to set up Usual Base.
 ---
 
 # Usual Base
@@ -19,6 +19,7 @@ What Usual Base gives you today. Anything not listed here doesn't exist yet.
 | Rendered view | People mostly read your notes rendered: tables, tasks, code, links, pictures. | [references/markdown.md](references/markdown.md) |
 | Sync and history | Optional git sync. History records who changed what. | [references/sync.md](references/sync.md) |
 | Hosted Bases | Bases on base.usual.dev, reached with the `usual-base` CLI and your own token. | [references/sync.md](references/sync.md#hosted-bases) |
+| Rooms | Talk with people and other agents in the Base: one file per message, so posts never conflict. | [references/rooms.md](references/rooms.md) |
 | Conflict copies | A clash never loses text; it leaves a copy to merge. | Below |
 
 ## Find the Base
@@ -100,47 +101,5 @@ Commands, credentials and history are in [references/sync.md](references/sync.md
 
 ## Set up
 
-Follow this when the user asks you to set up Usual Base for yourself (the setup prompt in the Usual Base README
-sends you here). Ask the user for anything you're missing. Don't write anything into the Base during setup
-unless the user says so.
-
-1. **Find the Base.** The user gives you a folder on this machine, the Base's git URL, or their hosted Usual Base.
-   - **Hosted Usual Base** (base.usual.dev): install the CLI (`curl -fsSL https://base.usual.dev/install.sh | sh`)
-     and run `usual-base connect --name "<your platform> on <this machine>"`. Show the user the link and code it
-     prints and wait while they approve. It clones every Base you may use into `~/Usual Base/`, installs this skill
-     and prints the lines for step 3, so skip step 2.
-   - For a URL, clone it to a stable place, such as `~/Bases/<name>`, or wherever the user prefers.
-   - If the clone needs credentials, ask the user for a token. Ideally each agent gets its own token, with
-     write access only if it should write. Handle it as described under "Credentials" in
-     [references/sync.md](references/sync.md).
-2. **Install this skill** where your agent loads skills, as a folder named `usual-base` holding `SKILL.md` and
-   `references/`:
-   - Claude Code: `~/.claude/skills/usual-base/`
-   - Codex and Cursor: `~/.agents/skills/usual-base/`
-   - Hermes: `~/.hermes/skills/<category>/usual-base/`; any category name works, such as `knowledge`.
-
-   Where the skill comes from:
-   - **The user gave a folder:** copy it. If that folder is a checkout the user keeps, you can link to it instead
-     so the skill stays current; ask which they prefer.
-   - **The user gave a repository URL:** clone the repository to a temporary folder and copy its
-     `skills/usual-base` folder.
-   - **A `usual-base` skill is already installed:** replace it. That's an update.
-
-   If your agent doesn't load skills, copy the folder to a lasting place outside the Base instead, such as
-   `~/.usual-base/skill/`. Step 3 then points at it.
-3. **Remember the Base.** Add these lines to your global instructions or memory file (for example
-   `~/.claude/CLAUDE.md` or `~/.codex/AGENTS.md`):
-
-   ```markdown
-   - Usual Base: <the Base's absolute path>. <One of: "Synced by the Usual Base app on this Mac." / "A git clone of <URL without credentials>." / "A plain folder, no git.">
-   - Use the usual-base skill to look things up there before asking, and to save what should outlast this session.
-   ```
-
-   - Without skills, write the second line as "Before using it, read `<absolute path to the copied SKILL.md>`."
-   - If you have no global instructions file, tell the user and ask where to keep these lines.
-   - Show the user what you added.
-4. **Check.**
-   - List the Base, and read its `AGENTS.md` or any note.
-   - For a git Base, run `git status` and `git remote -v`, and make sure no token appears in the output.
-5. **Report and offer.** Tell the user what you set up. If the Base has no `AGENTS.md`, offer to draft one that
-   describes its folders and rules; write it only if they agree.
+When the user asks you to set up Usual Base for yourself, follow [references/setup.md](references/setup.md):
+find the Base, install this skill, and remember where the Base is.

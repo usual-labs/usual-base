@@ -39,6 +39,20 @@ export function cloneBase(base, root) {
   return target;
 }
 
+/** Pulls with rebase, then pushes this clone's commits, retrying when others pushed first. Never force-pushes. */
+export function syncRepo(dir) {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const pull = gitTry(["-C", dir, "pull", "--rebase", "--autostash", "--quiet"]);
+    if (!pull.ok && !/couldn't find remote ref|no such ref/i.test(pull.out)) fail(`Pull failed: ${pull.out.trim()}`);
+    const ahead = gitTry(["-C", dir, "rev-list", "--count", "@{upstream}..HEAD"]);
+    if (ahead.ok && Number(ahead.out.trim()) === 0) return "up to date";
+    const push = gitTry(["-C", dir, "push", "--quiet", "-u", "origin", "HEAD"]);
+    if (push.ok) return "pushed";
+    if (!/rejected|fetch first|stale/i.test(push.out)) fail(`Push failed: ${push.out.trim()}`);
+  }
+  fail("Others kept pushing; run `usual-base sync` again.");
+}
+
 /** A git address fit to print: an HTTPS address loses any user name and password in it. */
 export function withoutCredentials(address) {
   try {

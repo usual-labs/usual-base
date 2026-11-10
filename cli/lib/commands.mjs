@@ -4,7 +4,9 @@ import { existsSync, lstatSync, mkdtempSync, readFileSync, realpathSync, rmSync,
 import { homedir, hostname, tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { basesDir, call, config, fail, git, gitTry, MAX_FILE_BYTES, server, setUpCredentialHelper, shown, token, writeConfig } from "./core.mjs";
-import { checkSizes, chooseBase, cloneBase, folderFiles, folderName, historyHead, initFolder, pushInBatches, snapshot, withoutCredentials } from "./bases.mjs";
+import { checkSizes, chooseBase, cloneBase, folderFiles, folderName, historyHead, initFolder, pushInBatches, snapshot, syncRepo, withoutCredentials } from "./bases.mjs";
+import { roomActions } from "./rooms.mjs";
+import { readerName, roomsBase } from "./room-store.mjs";
 import { doctor, linkedTo, skillFiles, update, writeSkill } from "./upkeep.mjs";
 
 // --- Commands ----------------------------------------------------------------------------------
@@ -126,23 +128,44 @@ Add these lines to your global instructions (for example ~/.claude/CLAUDE.md or 
     console.log(`Commit your changes and run \`usual-base sync\` in it. See it at ${server}/bases/${base.id}`);
   },
 
-  async sync({ args }) {
+  async sync({ args, flags }) {
     const dir = resolve(args[0] || ".");
     const top = gitTry(["-C", dir, "rev-parse", "--show-toplevel"]);
     if (!top.ok) fail(`${dir} isn't a Base clone.`);
     const status = git(["-C", dir, "status", "--porcelain"]);
-    if (status) console.log("Uncommitted changes stay local; commit them, then sync again to push them.");
-    for (let attempt = 0; attempt < 3; attempt++) {
-      const pull = gitTry(["-C", dir, "pull", "--rebase", "--autostash", "--quiet"]);
-      if (!pull.ok && !/couldn't find remote ref|no such ref/i.test(pull.out)) fail(`Pull failed: ${pull.out.trim()}`);
-      const ahead = gitTry(["-C", dir, "rev-list", "--count", "@{upstream}..HEAD"]);
-      const needsPush = !ahead.ok || Number(ahead.out.trim()) > 0;
-      if (!needsPush) return console.log("Up to date.");
-      const push = gitTry(["-C", dir, "push", "--quiet", "-u", "origin", "HEAD"]);
-      if (push.ok) return console.log("Pushed.");
-      if (!/rejected|fetch first|stale/i.test(push.out)) fail(`Push failed: ${push.out.trim()}`);
-    }
-    fail("Others kept pushing; run `usual-base sync` again.");
+    if (status && typeof flags.message === "string") {
+      // `-m` commits every change under the writer's name, so an agent needs only this command to save notes.
+      const writer = readerName(top.stdout.trim(), flags);
+      const email = gitTry(["-C", dir, "config", "user.email"]).stdout.trim() || "agent@agents.invalid";
+      git(["-C", dir, "add", "-A"]);
+      git(["-C", dir, "-c", `user.name=${writer}`, "-c", `user.email=${email}`, "commit", "--quiet", "--no-verify", "-m", flags.message]);
+    } else if (status) console.log("Uncommitted changes stay local; commit them (or pass -m), then sync again to push them.");
+    console.log(syncRepo(dir) === "pushed" ? "Pushed." : "Up to date.");
+  },
+
+  /** Sets an agent platform up for a Base. Today: `setup claude-code <project folder>`. */
+  async setup({ args, flags }) {
+    const [platform, ...rest] = args;
+    if (platform !== "claude-code") fail("usual-base setup claude-code <project folder> [--name NAME] [--base BASE] [--wake] [--remove]");
+    return (await import("./claude-code.mjs")).setupClaudeCode({ args: rest, flags });
+  },
+
+  /** What an agent platform's hooks run. Today: `hook claude-code`, reading the hook's JSON on stdin. */
+  async hook({ args }) {
+    if (args[0] === "claude-code") return (await import("./claude-code.mjs")).claudeCodeHook();
+  },
+
+  /** Wakes agents when someone posts in their rooms; `relay install | uninstall | status`. */
+  async relay({ args, flags }) {
+    return (await import("./relay.mjs")).relay({ args, flags });
+  },
+
+  /** Rooms: `room list | create | read | say | wait | join | leave | news`, in the Base `roomsBase` finds. */
+  async room({ args, flags }) {
+    const [action, ...rest] = args;
+    const run = roomActions[action] ||
+      fail("usual-base room list | create <name> | read <room> | say <room> <message> | wait <room>");
+    return run(roomsBase(flags), rest, flags);
   },
 
   async import({ args, flags }) {

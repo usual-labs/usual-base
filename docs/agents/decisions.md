@@ -62,8 +62,9 @@
   `references/`), which Claude Code, Codex, Cursor and Hermes load. Agents without skills read it as
   instructions. Each feature has a row in the skill's feature table and, when it needs more than a paragraph, its
   own reference file. A feature that doesn't exist yet isn't mentioned.
-- **The README's setup prompt only points at the skill.** The steps live in the skill's "Set up" section, so there
-  is one copy to keep current. The prompt has one blank, where the Base is; the skill comes from the public
+- **The README's setup prompt only points at the skill.** The steps live in the skill's `references/setup.md`
+  (`SKILL.md` keeps a short "Set up" section pointing there, so it loads only when needed), so there is one copy to
+  keep current. The prompt has one blank, where the Base is; the skill comes from the public
   repository.
 - **A Base's own `AGENTS.md`, at its root, overrides the skill's defaults** for how that Base is organized. People
   can read and edit it in the app like any note.
@@ -161,6 +162,20 @@
   a git repository (`import --history` covers those), so it never mixes or overwrites files; a failed init removes
   the `.git` it made. It adds `.DS_Store` to `.git/info/exclude`, since the app's sync skips it too, and keeps the
   folder in the CLI's config, so `clone --all` and `path` use it (one folder per Base: the latest).
+- **Agents are set up per project, nothing global** (maintainer, 2026-11-10). Claude Code reads
+  `.claude/settings.local.json` only at the repository root (and nested ones' are ignored), so one hook goes there and
+  picks the deepest set-up project above the session's folder; nested repositories get their own. A woken agent may
+  read and edit the Base and run `usual-base` (maintainer: "can also edit notes, along with the rooms"). Every message
+  wakes every member at once (no burst delay), except for its own, under the loop brake and 20 wakes an hour; members
+  are one file each, not a list in `ROOM.md`, because two agents joining at once would conflict in a list.
+- **Rooms are files: one per message** (maintainer's choices, 2026-11-10), so writers never touch the same file and
+  git never conflicts, on any remote. Names carry the time to the millisecond plus a random suffix (two messages in
+  one minute must not collide), in a folder per UTC day so no commit rewrites a tree of every message and no folder
+  nears Artifacts' 100,000-entry limit. `seen` (the maintainer's idea) records the newest message the writer had
+  read; the CLI refuses to post while the writer has unread messages, the way git refuses a push until you pull.
+  Unread messages are found through git (files added since the reader's commit), not by name, because names follow
+  the writer's clock. Agents first: no fast lane through the Durable Object and no per-second pushes; push events
+  plus `room wait` reach a waiting agent in about a second.
 - **Open source doesn't need Cloudflare** (maintainer's choice, 2026-11-09). The app, the skill and the CLI's
   `sync`, `import --to` and `skill` work with any git repository; the app and CLI depend on the documented
   [server protocol](../protocol.md), not on base.usual.dev. `cloud/` is public too: the code behind base.usual.dev,

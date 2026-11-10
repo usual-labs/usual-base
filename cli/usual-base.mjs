@@ -33,12 +33,31 @@ With a Usual Base server (${server}):
   usual-base path <base>                         print where a Base is cloned
   usual-base whoami | logout
 
+Rooms, where people and agents talk in a Base (one file per message; works with any git remote):
+  usual-base room list                           the Base's rooms, and what's new in each
+  usual-base room create <name> [--about TEXT]   start a room
+  usual-base room read <room> [--all | --last N] [--json]
+                                                 show what's new since you last read, and mark it read
+  usual-base room say <room> <message> [--re FILE] [--anyway]
+                                                 post; shows you any messages you hadn't read instead
+  usual-base room wait <room> [--timeout SECONDS]
+                                                 block until someone posts (default 600 s; exits 2 if not)
+  usual-base room join <room> | leave <room>     become a member (members are woken), or stop
+  usual-base room news [--intro]                 what's new in your rooms; prints nothing if nothing is
+  They take --base FOLDER|NAME for the Base, and --as NAME (or USUAL_BASE_NAME) for who you are.
+
+Agents:
+  usual-base setup claude-code <folder> [--name NAME] [--base BASE] [--wake] [--remove]
+                                                 make that project's Claude Code an agent of the Base
+  usual-base relay [install | uninstall | status]
+                                                 wake agents set up with --wake when their rooms get messages
+
 --history keeps the folder's git history, even for a subfolder of a bigger repository.
 Once a day, the commands that work with Bases check whether this CLI or a skill is out of date.
 USUAL_BASE_TOKEN, USUAL_BASE_SERVER and USUAL_BASE_DIR override the saved settings.`;
 
 // The commands after which the daily update check runs; never `credential`, whose output git reads.
-const CHECKED = new Set(["sync", "import", "connect", "init", "bases", "clone", "path", "whoami"]);
+const CHECKED = new Set(["sync", "import", "connect", "init", "bases", "clone", "path", "whoami", "room"]);
 
 const [command, ...rest] = process.argv.slice(2);
 if (!command || command === "help" || command === "--help" || command === "-h") console.log(help);

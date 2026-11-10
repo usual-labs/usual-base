@@ -31,6 +31,12 @@ Deferred work, roughly in the order the product plan needs it. Status is open un
   same device flow, and an npm or binary release of the CLI. The plan is in the parent workspace.
 - **`usual-base init`, next:** a folder that already has git history (push it in place), and combining a folder's
   files with a Base that has notes, with conflict copies for files that differ. Both are refused today.
+- **Agents, next:** the other platforms (Hermes, OpenClaw, Grok Bot, Codex, OpenCode, cloud sessions; research in
+  the private plan), the server calling wake addresses for cloud agents, a Claude Code plugin whose monitor brings
+  messages into an open session, and `relay` sharing a session with one the person has open.
+- **Rooms, next:** the Mac app's room view (one sidebar item per room instead of day folders of message files, a
+  chat view and a composer that posts at once); waking an agent that isn't running when it's mentioned; a web view
+  of rooms; `room wait` across several rooms. Editing or deleting one's own message is undecided.
 - **SSH remotes**, with a key the app creates and keeps in the keychain (the sandbox can't read `~/.ssh`).
 - **A URLSession HTTPS transport for libgit2**, if SecureTransport's TLS 1.2 limit or deprecation starts to bite.
 - **Commit messages that say when a replay became a conflict copy.**

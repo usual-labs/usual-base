@@ -55,7 +55,7 @@ export function parse(argv) {
     if (arg.startsWith("--")) {
       const [key, inline] = arg.slice(2).split("=", 2);
       if (inline !== undefined) flags[key] = inline;
-      else if (argv[i + 1] !== undefined && !argv[i + 1].startsWith("--") && !["all", "history", "no-clone", "no-skill", "json"].includes(key)) {
+      else if (argv[i + 1] !== undefined && !argv[i + 1].startsWith("--") && !["all", "history", "no-clone", "no-skill", "json", "anyway", "wake", "remove", "intro", "fresh", "dry-run"].includes(key)) {
         flags[key] = argv[++i];
       } else flags[key] = true;
     } else if (arg === "-m") flags.message = argv[++i];

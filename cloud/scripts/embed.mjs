@@ -1,13 +1,24 @@
 // Writes src/generated/files.ts: the CLI, its installer and the agent skill as strings, so the server can
 // serve them. Wrangler runs this before every build (see "build" in wrangler.jsonc).
 import { buildSync } from "esbuild";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const cloud = join(dirname(fileURLToPath(import.meta.url)), "..");
 const repo = join(cloud, "..");
 const read = (path) => readFileSync(join(repo, path), "utf8");
+
+/** Every file of the agent skill, by its path inside the skill, so a new reference is served without a change here. */
+function skillFiles(dir = join(repo, "skills", "usual-base"), root = dir, files = {}) {
+  for (const entry of readdirSync(dir, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
+    if (entry.name.startsWith(".")) continue;
+    const path = join(dir, entry.name);
+    if (entry.isDirectory()) skillFiles(path, root, files);
+    else files[relative(root, path)] = readFileSync(path, "utf8");
+  }
+  return files;
+}
 
 // The CLI's source is split into modules; people download it as the one file this bundles.
 const [cli] = buildSync({
@@ -24,11 +35,7 @@ const [cli] = buildSync({
 const files = {
   cli: cli.text,
   installScript: read("cloud/src/install.sh"),
-  skill: {
-    "SKILL.md": read("skills/usual-base/SKILL.md"),
-    "references/markdown.md": read("skills/usual-base/references/markdown.md"),
-    "references/sync.md": read("skills/usual-base/references/sync.md"),
-  },
+  skill: skillFiles(),
 };
 
 const out = join(cloud, "src", "generated", "files.ts");
