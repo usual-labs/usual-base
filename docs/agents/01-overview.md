@@ -18,9 +18,11 @@ accounts (Better Auth, sign-ups limited by the `SIGNUPS` setting; every table th
 and devices, Connect an agent, approving a connection), a JSON API, and git at `/git/<base>.git` in front of one
 repository per Base. Tokens (`ubt_…`, hashed) belong to an agent or a device, cover some Bases or all,
 read or read-write. The git proxy refuses force pushes and branch deletions, records each push, and tells the
-apps watching that Base over a WebSocket. `cli/usual-base.mjs` (served by the server)
-connects with the device flow, clones, syncs, imports a folder (snapshot, or `--history`, also of a subfolder) in
-batches under Artifacts' limits, installs the skill, and is git's credential helper for the server. Without any
+apps watching that Base over a WebSocket. The CLI (`cli/`, served bundled into one file; installed as `usual-base`
+and `ubase`)
+connects with the device flow, clones, syncs, makes a folder a Base where it is (`init`), imports a folder (snapshot, or `--history`, also of a subfolder) in
+batches under Artifacts' limits, installs the skill, updates itself and the installed skills (`update`, and a daily
+check that asks first), checks the setup (`doctor`), and is git's credential helper for the server. Without any
 server it still syncs a clone, imports into an empty git repository (`--to <git url>`), and installs the skill
 from the checkout it sits in. [docs/protocol.md](../protocol.md) is what the app and CLI expect from a server. Details: [cloud/README.md](../../cloud/README.md).
 
@@ -112,6 +114,25 @@ README's "Set up your agents" prompt hands an agent to that section.
   nothing named `usual` is installed and `/cli/usual.mjs` answers 404. The 12 checks without a server passed too.
   Deployed the same day (no migration). On production, `/cli/usual.mjs` answers 404, the served CLI, installer
   and skill match the checkout byte for byte, and the installer puts `usual-base` in a scratch folder.
+- **`usual-base init` (2026-11-10):** a 33-check script against `wrangler dev` and against the Node server passed: a
+  folder with files becomes a new Base (committed without `.DS_Store` or ignored files, under the person's git name,
+  tracking `origin/main`) and syncs; an empty folder gets an existing Base's notes; refusals (a Base with notes for
+  a folder with files, a folder in a repository, an existing repository, no terminal and no flag, both flags, an
+  unknown Base, a file over 32 MiB, a read-only token) leave the folder without `.git` and create no Base; in a
+  terminal (driven by `expect`) a folder with files is offered only empty Bases, a wrong answer asks again, Enter
+  takes the folder's name, and Ctrl-C changes nothing; `clone --all` and `path` use the init folder. The earlier 47
+  and 12 checks still pass. Deployed with the next entry.
+- **`ubase`, `update`, `doctor` and the daily check (2026-11-10):** with the CLI installed from the local server's
+  `install.sh`, a 37-check script passed against `wrangler dev` and the Node server: `ubase` is a link that runs the
+  CLI, survives a reinstall and leaves another program called `ubase` alone; git's token helper names the real file;
+  `doctor` reports a healthy setup with exit 0, and finds an out-of-date CLI, a missing `ubase`, a missing token
+  helper and an out-of-date skill (exit 1); `update` fixes all four; a skill folder linked elsewhere is never
+  written by `skill` or `update`, and `doctor` only notes it; the daily check says so on stderr without a terminal
+  and not again that day, asks in a terminal (Enter updates, n leaves it), and never runs for `credential`. The
+  `init` (33), end-to-end (47) and no-server (12) scripts pass on the bundled CLI. Deployed the same day, with
+  `init` (no migration; the first try hit D1's 7403 and the retry worked). On production the served CLI matches the
+  bundle built from the checkout, the installer and skill match the checkout, `/cli/usual.mjs` is 404, and a fresh
+  install in a scratch home gets `ubase`, a clean `doctor` (exit 0) and an `update` with nothing to do.
 - **CLI without a server (2026-11-09):** a script with the server address on a closed port passed 12 checks:
   grouped help, the skill installed from the checkout byte for byte, `import --to` a bare repository (snapshot
   with `.gitignore`, and `--history` of a subfolder), a second import into a repository with history refused

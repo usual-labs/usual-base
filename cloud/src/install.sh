@@ -1,5 +1,6 @@
 #!/bin/sh
-# Installs the Usual Base CLI as ~/.local/bin/usual-base. It needs Node.js 18 or later and git.
+# Installs the Usual Base CLI as ~/.local/bin/usual-base, with ubase as a link to it. It needs Node.js 18 or later
+# and git.
 set -eu
 SERVER="https://base.usual.dev"
 DIR="${USUAL_BASE_BIN:-$HOME/.local/bin}"
@@ -13,7 +14,10 @@ mkdir -p "$DIR"
 curl -fsSL "$SERVER/cli/usual-base.mjs" -o "$DIR/usual-base.tmp"
 mv "$DIR/usual-base.tmp" "$DIR/usual-base"
 chmod +x "$DIR/usual-base"
-echo "Installed $DIR/usual-base"
+# The short name, unless something else already has it.
+if [ ! -e "$DIR/ubase" ] && [ ! -L "$DIR/ubase" ]; then ln -s usual-base "$DIR/ubase"; fi
+if [ "$(readlink "$DIR/ubase" 2>/dev/null)" = usual-base ]; then also=" (also as ubase)"; else also=""; fi
+echo "Installed $DIR/usual-base$also"
 case ":$PATH:" in
   *":$DIR:"*) ;;
   *) echo "Add $DIR to your PATH, or run it as $DIR/usual-base" ;;

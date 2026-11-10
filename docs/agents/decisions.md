@@ -143,12 +143,24 @@
 - **Live updates come from the proxy, not Queue events:** every push passes through it, it tells the Base's
   Durable Object directly, and that answers keep-alive pings without waking. Queue events took up to 5 s.
 - **The CLI is one Node file served by the server**, embedded at build time with the skill, so there's nothing to
-  publish to npm and the CLI matches the server it came from. Run from a checkout, it installs the checkout's own
-  skill instead.
-- **The command is `usual-base`, not `usual`** (maintainer's choice, 2026-11-10). Usual is the whole lab, and its
-  other CLI is `usual-ui`. The name matches the repository, the skill, `~/.config/usual-base/` and the
-  `USUAL_BASE_*` settings. If the lab ever wants one `usual` command, `usual base …` can hand off to `usual-base`
-  the way `git foo` runs `git-foo`.
+  publish to npm and the CLI matches the server it came from. Its source is split by responsibility
+  (`cli/usual-base.mjs` and `cli/lib/`), and `cloud/scripts/embed.mjs` bundles it with esbuild, already a build
+  dependency. Run from a checkout, it uses the checkout's own skill and is updated with git.
+- **The command is `usual-base`, also installed as `ubase`** (maintainer's choices, 2026-11-10). Usual is the whole
+  lab, and its other CLI is `usual-ui`, so the full name matches the repository, the skill, `~/.config/usual-base/`
+  and the `USUAL_BASE_*` settings; `ubase` is the short name people type. It's a link the installer and `update` add
+  beside the CLI, never over another program's file. Messages and docs name `usual-base`. If the lab ever wants one
+  `usual` command, `usual base …` can hand off to `usual-base` the way `git foo` runs `git-foo`.
+- **Out of date means different from what the server serves** (2026-11-10): `update`, `doctor` and the daily check
+  compare the CLI file and each skill file with the server's copies, not version numbers, so a deploy is enough. The
+  daily check runs after commands that work with Bases, never after `credential` (git reads its output); it asks in
+  a terminal and otherwise says so once on stderr, and an unreachable server is tried again next time. No command
+  writes through a linked skill folder: on a maintainer's machine it leads into a checkout.
+- **`usual-base init` makes the folder itself the Base** (maintainer's choice, 2026-11-10), where `import` uploads a
+  copy. It refuses when both the folder and the Base have files rather than combining them, and refuses a folder in
+  a git repository (`import --history` covers those), so it never mixes or overwrites files; a failed init removes
+  the `.git` it made. It adds `.DS_Store` to `.git/info/exclude`, since the app's sync skips it too, and keeps the
+  folder in the CLI's config, so `clone --all` and `path` use it (one folder per Base: the latest).
 - **Open source doesn't need Cloudflare** (maintainer's choice, 2026-11-09). The app, the skill and the CLI's
   `sync`, `import --to` and `skill` work with any git repository; the app and CLI depend on the documented
   [server protocol](../protocol.md), not on base.usual.dev. `cloud/` is public too: the code behind base.usual.dev,

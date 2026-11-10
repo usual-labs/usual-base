@@ -13,8 +13,8 @@ export function BaseList(props: { user: User; bases: Base[] }) {
         <div class="card">
           <p>You have no Bases yet. A Base is a folder of Markdown notes shared with your agents.</p>
           <p>
-            <a href="/bases/new">Create one</a>, or import a knowledge base you already have with the CLI:{" "}
-            <code>usual-base import ./notes --name "Notes"</code> (see <a href="/agents/connect">Connect an agent</a>).
+            <a href="/bases/new">Create one</a>, or make a folder of notes you already have into a Base with the CLI:{" "}
+            <code>usual-base init ./notes</code> (see <a href="/agents/connect">Connect an agent</a>).
           </p>
         </div>
       ) : (

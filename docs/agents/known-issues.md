@@ -94,3 +94,8 @@
   scratch clone, since git won't fetch a commit no ref points at.
 - **Artifacts refuses a file over 32 MiB with "remote failed to report status"**, so `usual-base import` checks sizes
   itself; history over 50,000 objects is pushed in halving batches.
+- **git's token helper names Node's real path** (`process.execPath`, such as a versioned folder of a Node install),
+  so it breaks when that Node moves or is upgraded away: git then asks for a password. `usual-base doctor` finds it
+  and `usual-base update` points the helper at the current Node and CLI.
+- **The served CLI is a bundle, not `cli/usual-base.mjs`.** Compare a downloaded CLI with
+  `cloud/src/generated/files.ts` (after `node scripts/embed.mjs`), not with the source files.

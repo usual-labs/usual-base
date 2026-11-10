@@ -81,9 +81,17 @@ Bases on hosted Usual Base (base.usual.dev) are git repositories at `https://bas
 - **Commands:** `usual-base bases` lists what you may read; `usual-base clone <base>` (or `--all`) clones into
   `~/Usual Base/`; `usual-base sync` pulls, then pushes your commits; `usual-base path <base>` prints a Base's
   folder.
+- **Making a folder a Base, where it is:** with the user's OK, `usual-base init <folder> --base <base>`, or `--name
+  "<name>"` for a new Base, turns the folder into the Base's clone: its files go into an empty Base, or an empty
+  folder gets the Base's notes. It refuses a folder inside a git repository, and a Base with notes when the folder
+  has files too. Without `--base` or `--name` it asks in a terminal, so pass one.
 - **Creating a Base from an existing knowledge base:** `usual-base import <folder> --name "<name>"` uploads the
   folder (its `.gitignore` applies), or with `--history` its git history, even for a subfolder of a bigger
   repository. Ask the user before importing: it creates a Base they'll see, and files over 32 MiB can't be stored.
+- **Keeping the CLI and this skill current:** `ubase` is the same command as `usual-base`. `usual-base doctor`
+  checks the setup and says what to fix; `usual-base update` updates the CLI and every installed copy of this skill.
+  When a command prints "Out of date", tell the user and update with their OK. A skill folder that's a link (to a
+  checkout, say) is never written; update that copy instead.
 - **The server refuses force pushes and branch deletions.** If a push is refused as "not a fast-forward",
   pull with rebase and push again.
 - **What your token can do** is up to the user: some Bases or all, read only or read and write. A 403 on push means

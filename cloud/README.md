@@ -26,8 +26,9 @@ Each entry point builds the `Env` in `src/env.ts` for every request; everything 
 - **Git** goes through `/git/<base>.git` (`src/git.ts`): it checks the token, refuses force pushes, branch
   deletions and anything but branches, passes the request to the Base's repository, records who pushed, and
   tells the apps watching.
-- **The CLI and the agent skill** (`../cli/usual-base.mjs`, `../skills/usual-base/`) are served at `/install.sh`,
-  `/cli/usual-base.mjs` and `/skill.json`, embedded at build time by `scripts/embed.mjs`.
+- **The CLI and the agent skill** (`../cli/`, `../skills/usual-base/`) are served at `/install.sh`,
+  `/cli/usual-base.mjs` and `/skill.json`, embedded at build time by `scripts/embed.mjs`, which bundles the CLI's
+  modules into the one file people download. The installer adds `ubase` as a link to it.
 
 ## Run it yourself with Docker
 

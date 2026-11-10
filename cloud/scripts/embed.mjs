@@ -1,5 +1,6 @@
-// Writes src/generated/files.ts: the CLI, its installer and the agent skill as strings, so the Worker can
+// Writes src/generated/files.ts: the CLI, its installer and the agent skill as strings, so the server can
 // serve them. Wrangler runs this before every build (see "build" in wrangler.jsonc).
+import { buildSync } from "esbuild";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -8,8 +9,20 @@ const cloud = join(dirname(fileURLToPath(import.meta.url)), "..");
 const repo = join(cloud, "..");
 const read = (path) => readFileSync(join(repo, path), "utf8");
 
+// The CLI's source is split into modules; people download it as the one file this bundles.
+const [cli] = buildSync({
+  entryPoints: [join(repo, "cli", "usual-base.mjs")],
+  bundle: true,
+  platform: "node",
+  format: "esm",
+  target: "node18",
+  write: false,
+  logLevel: "error",
+  banner: { js: "// The Usual Base CLI, bundled from cli/ in https://github.com/usual-labs/usual-base. `usual-base help` lists its commands." },
+}).outputFiles;
+
 const files = {
-  cli: read("cli/usual-base.mjs"),
+  cli: cli.text,
   installScript: read("cloud/src/install.sh"),
   skill: {
     "SKILL.md": read("skills/usual-base/SKILL.md"),

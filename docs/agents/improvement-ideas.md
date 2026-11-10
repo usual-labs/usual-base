@@ -29,6 +29,8 @@ Deferred work, roughly in the order the product plan needs it. Status is open un
 - **Hosted Usual Base, next:** email verification and password reset (Better Auth hooks plus an email sender),
   billing and quotas, sharing a Base with other people, a web view of notes, GitHub sign-in, a mobile app on the
   same device flow, and an npm or binary release of the CLI. The plan is in the parent workspace.
+- **`usual-base init`, next:** a folder that already has git history (push it in place), and combining a folder's
+  files with a Base that has notes, with conflict copies for files that differ. Both are refused today.
 - **SSH remotes**, with a key the app creates and keeps in the keychain (the sandbox can't read `~/.ssh`).
 - **A URLSession HTTPS transport for libgit2**, if SecureTransport's TLS 1.2 limit or deprecation starts to bite.
 - **Commit messages that say when a replay became a conflict copy.**
