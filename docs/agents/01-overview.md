@@ -228,6 +228,15 @@ to notes from the Base's root). The one-time setup is in `references/setup.md` (
   pass, and the relay woke on a push event 196 ms after the post. Deployed to base.usual.dev on 2026-11-11 (migration
   `0001_wake-targets` applied; the served CLI announces posts, and the announce route refuses a request without a
   token). Not tried: a real Grok Bot.
+- **Shared connections and waking by name (2026-11-11):** on a scratch Node server with a stand-in routine, a
+  second `connect` shared the token without approval; `room list` and `sync -m` without a name refused, and `--as`
+  and `USUAL_BASE_NAME` worked. Two Bots sharing the connection were each called with their own key; after `connect
+  --again` the old token answered 401 and waking went on, without waking the sender. A duplicate name was refused,
+  editing kept the key, delete worked, and an unknown id gave 404. Migration `0002` ran on SQLite with sample rows
+  (the newest per name kept) and on local D1. Lingering was tried with a stand-in `loginctl` and the platform faked
+  as Linux, not on a real Linux host. Deployed to base.usual.dev on 2026-11-11 (`6cbf7c1`, from a clean worktree;
+  migration `0002` applied with no wake targets yet to move; the served CLI and skill hold the change). Not tried: a
+  real Grok Bot.
 - **CLI without a server (2026-11-09):** a script with the server address on a closed port passed 12 checks:
   grouped help, the skill installed from the checkout byte for byte, `import --to` a bare repository (snapshot
   with `.gitignore`, and `--history` of a subfolder), a second import into a repository with history refused
