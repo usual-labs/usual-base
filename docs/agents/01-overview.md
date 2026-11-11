@@ -14,11 +14,11 @@ with a plain click. Edit is the styled source editor. The mode is remembered, an
 Worker at base.usual.dev (D1, Artifacts, a Durable Object per Base, Workers rate limiting) and a Node server for
 Docker (`cloud/Dockerfile`: a libSQL/SQLite file, bare repositories behind `git http-backend`, WebSockets held in
 the process, an in-memory sign-in limit). Each builds the `Env` in `src/env.ts` per request. It has email-and-password
-accounts (Better Auth, sign-ups limited by the `SIGNUPS` setting; every table through Drizzle), a server-rendered dashboard (Bases, agents
-and devices, Connect an agent, approving a connection; redesigned 2026-11-11 in the Usual family's look: Figtree,
-the Prociono wordmark, the app icon, monochrome, view transitions; `cloud/assets/` embedded by `scripts/embed.mjs`
-at hashed `/assets/` paths; browsers get a 404 page, git and the API plain text), a JSON API, and git at `/git/<base>.git` in front of one
-repository per Base. Tokens (`ubt_…`, hashed) belong to an agent or a device, cover some Bases or all,
+accounts (Better Auth, sign-ups limited by the `SIGNUPS` setting; every table through Drizzle), a server-rendered
+dashboard (Bases, Agents, Connect an agent, approving a connection; since 2026-11-11 in the Usual family's look:
+Figtree, the Prociono wordmark, the app icon, monochrome, view transitions; `cloud/assets/` embedded by
+`scripts/embed.mjs` at hashed `/assets/` paths; browsers get a 404 page, git and the API plain text), a JSON API,
+and git at `/git/<base>.git` in front of one repository per Base. Tokens (`ubt_…`, hashed) belong to an agent or a device, cover some Bases or all,
 read or read-write. The git proxy refuses force pushes and branch deletions, records each push, and tells the
 apps watching that Base over a WebSocket. The CLI (`cli/`, served bundled into one file; installed as `usual-base`
 and `ubase`)
@@ -235,7 +235,11 @@ to notes from the Base's root). The one-time setup is in `references/setup.md` (
   New Base, Agents, Connect an agent, the token page, Wake an agent, entering and approving a code, Connected,
   and the 404 page, in light and dark, at desktop and phone width (no sideways scrolling). Copy buttons fell back
   to selecting the text there; view transitions are in the stylesheet (`@view-transition` parsed). `npm run
-  check` and a Worker dry run pass. Not seen: Safari, Firefox, a regular browser's clipboard.
+  check` and a Worker dry run pass. Deployed to base.usual.dev on 2026-11-11 (`8d5b391`, from a clean worktree):
+  the welcome, sign-in and sign-up pages answer 200 with the new look, signed-out dashboard pages redirect to
+  sign-in, the 404 page shows for browsers and plain text for others, and the stylesheet, script, both fonts and
+  icons are served from hashed paths with a year's caching (the unhashed path 404s). Not seen: Safari, Firefox, a
+  regular browser's clipboard, the signed-in pages on production.
 - **Shared connections and waking by name (2026-11-11):** on a scratch Node server with a stand-in routine, a
   second `connect` shared the token without approval; `room list` and `sync -m` without a name refused, and `--as`
   and `USUAL_BASE_NAME` worked. Two Bots sharing the connection were each called with their own key; after `connect
