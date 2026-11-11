@@ -7,7 +7,7 @@ import { spawn } from "node:child_process";
 import { existsSync, mkdirSync, readdirSync, readFileSync, realpathSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, isAbsolute, join } from "node:path";
-import { cliFile, config, fail, shown, writeConfig } from "./core.mjs";
+import { commandDir, config, fail, shown, writeConfig } from "./core.mjs";
 import { markRead, messagesIn, roomsBase, ROOMS } from "./room-store.mjs";
 import { linkedTo, skillFiles, writeSkill } from "./upkeep.mjs";
 
@@ -105,7 +105,7 @@ export function wakeHermes(agent, room, messages, record, done) {
   ].join("\n");
   markRead(base, join(ROOMS, room), agent.name, messagesIn(base, join(ROOMS, room)));
   const hermes = process.env.USUAL_BASE_HERMES || agent.hermes || "hermes";
-  const path = [dirname(cliFile()), dirname(process.execPath), dirname(hermes), process.env.PATH || "/usr/bin:/bin"].join(":");
+  const path = [commandDir(), dirname(process.execPath), dirname(hermes), process.env.PATH || "/usr/bin:/bin"].join(":");
   log(`${agent.name}: ${room}: woken in its Bot Chat (profile ${agent.profile})`);
   const child = spawn(hermes, ["-p", agent.profile, "chat", "--in", homedir(), "-c", "Bot Chat", "-Q", "--query-file", "-"], {
     cwd: agent.path,

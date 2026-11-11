@@ -30,7 +30,8 @@ and `ubase`)
 connects with the device flow (one connection per machine, shared by its agents: `connect` keeps a working one and
 adds the agent's name to `agentNames`; `--again` replaces it and revokes the old token), clones, syncs, makes a folder a Base where it is
 (`init`, also inside a project, which then ignores it; in a terminal without a folder it walks a person through a
-Base for the project and its Claude Code: `cli/lib/init.mjs`), imports a folder (snapshot, or `--history`, also of a subfolder) in
+Base for the project and its Claude Code: `cli/lib/init.mjs`), installs with `install.sh` or Homebrew
+(`usual-labs/tap/usual-base`, which leaves updates to `brew upgrade`), imports a folder (snapshot, or `--history`, also of a subfolder) in
 batches under Artifacts' limits, installs the skill, updates itself and the installed skills (`update`, and a daily
 check that asks first), checks the setup (`doctor`), runs rooms (`room`, below), and is git's credential helper for the server. Without any
 server it still syncs a clone, imports into an empty git repository (`--to <git url>`), and installs the skill

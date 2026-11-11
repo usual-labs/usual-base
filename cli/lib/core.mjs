@@ -5,7 +5,7 @@ import { chmodSync, existsSync, mkdirSync, readFileSync, realpathSync, writeFile
 import { homedir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 
-export const VERSION = "0.2.0";
+export const VERSION = "0.2.1";
 export const ALIAS = "ubase";
 export const DAY = 24 * 60 * 60 * 1000;
 export const DEFAULT_SERVER = "https://base.usual.dev";
@@ -43,6 +43,16 @@ export const fail = (message) => {
 
 /** This CLI's own file, whichever name ran it. */
 export const cliFile = () => realpathSync(process.argv[1]);
+/**
+ * How to run this CLI from elsewhere: git's credential helper, the relay's login service. A package manager's
+ * launcher, such as Homebrew's, gives a path that outlives upgrades in USUAL_BASE_COMMAND; otherwise it's Node
+ * and this file.
+ */
+export const selfCommand = () => (process.env.USUAL_BASE_COMMAND ? [process.env.USUAL_BASE_COMMAND] : [process.execPath, cliFile()]);
+/** The folder with the `usual-base` command, for the PATH of a program this CLI starts. */
+export const commandDir = () => dirname(process.env.USUAL_BASE_COMMAND || cliFile());
+/** The command that updates this CLI when a package manager installed it (USUAL_BASE_UPDATE), so it never updates itself. */
+export const managedUpdate = () => process.env.USUAL_BASE_UPDATE || null;
 /** Run from a checkout of the repository, the CLI uses the checkout's skill and is updated with git. */
 export const inCheckout = () => existsSync(join(dirname(cliFile()), "..", "skills", "usual-base", "SKILL.md"));
 export const shown = (path) => (path.startsWith(homedir() + "/") ? "~" + path.slice(homedir().length) : path);
@@ -99,7 +109,7 @@ export function gitTry(args, options = {}) {
 }
 
 export const helperKey = () => `credential.${server}.helper`;
-export const helperCommand = () => `!'${process.execPath}' '${cliFile()}' credential`;
+export const helperCommand = () => `!${selfCommand().map((part) => `'${part}'`).join(" ")} credential`;
 export const helperIsThis = () => gitTry(["config", "--global", "--get-all", helperKey()]).stdout.split("\n").includes(helperCommand());
 
 /** Makes git ask this CLI for the token whenever it talks to the server, and nothing else. */

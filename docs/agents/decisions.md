@@ -249,6 +249,15 @@
   the Base syncs by itself, never with the project's commits. A folder holding files the project tracks, a
   repository root, a folder inside another Base, and a folder holding git repositories are refused; the last
   would end up as broken links in the Base. Claude Code's plugin isn't installed inside a Base.
+- **Homebrew installs the CLI and the app from GitHub releases** (maintainer, 2026-11-11: "add it to homebrew with
+  usual tap we already have, the cli and the cask"). The tap `usual-labs/homebrew-tap` has a `usual-base` formula
+  (the CLI, bundled into one file as the server serves it, attached to a `cli-v<version>` release; depends on
+  Homebrew's Node) and a `usual-base` cask (the notarized app, `UsualBase-<version>.zip` on a `v<version>` release,
+  marked latest). The CLI and the app keep separate versions, hence the two tag series. Homebrew's launcher sets
+  `USUAL_BASE_COMMAND` (its stable `opt` path) and `USUAL_BASE_UPDATE` (`brew upgrade …`): git's credential helper,
+  the relay service and a woken agent's PATH use the stable path, since the real paths change with every upgrade
+  of the CLI or of Node, and `update`, `doctor` and the daily check leave the CLI to Homebrew. Nothing else about
+  the CLI changes.
 - **The Mac app creates and connects Bases with a wizard in the card** (maintainer, 2026-11-11: "a nice wizard … when
   nothing is connected, a cta should be to create a base or connect an existing to folder"). In the card rather
   than a sheet: it replaces the empty state in place, steps move with transitions, the sign-in sheet stays out of

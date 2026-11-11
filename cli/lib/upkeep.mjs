@@ -5,13 +5,15 @@ import { accessSync, constants, existsSync, lstatSync, mkdirSync, readFileSync, 
 import { homedir } from "node:os";
 import { basename, delimiter, dirname, join, relative } from "node:path";
 import { createInterface } from "node:readline";
-import { ALIAS, ask, basesDir, call, cliFile, DAY, Failure, gitTry, helperIsThis, inCheckout, readConfig, servedCli, server, setUpCredentialHelper, sharedBy, shown, token, VERSION, writeConfig } from "./core.mjs";
+import { ALIAS, ask, basesDir, call, cliFile, commandDir, DAY, Failure, gitTry, helperIsThis, inCheckout, managedUpdate, readConfig, servedCli, server, setUpCredentialHelper, sharedBy, shown, token, VERSION, writeConfig } from "./core.mjs";
 import { folderName, initFolder } from "./bases.mjs";
 
 /** Brings this machine's CLI, its `ubase` link, the installed skills and git's token helper up to date. */
 export async function update() {
   if (inCheckout()) {
     console.log(`This CLI runs from the checkout at ${shown(dirname(dirname(cliFile())))}; update it with git pull.`);
+  } else if (managedUpdate()) {
+    console.log(`This CLI (${VERSION}) came with a package manager; update it with \`${managedUpdate()}\`.`);
   } else {
     const served = await servedCli();
     if (served === readFileSync(cliFile(), "utf8")) console.log(`The CLI is up to date (${VERSION}).`);
@@ -64,20 +66,23 @@ export async function doctor({ flags }) {
   } catch (error) {
     report("fix", `Can't reach ${server}: ${error.message}`);
   }
-  const alias = inCheckout() ? null : aliasState();
+  const alias = inCheckout() || managedUpdate() ? null : aliasState();
   if (inCheckout()) report("ok", `The CLI runs from the checkout at ${shown(dirname(dirname(cliFile())))}.`);
+  else if (managedUpdate()) report("ok", `The CLI ${VERSION} came with a package manager; \`${managedUpdate()}\` updates it.`);
   else {
     if (served === readFileSync(cliFile(), "utf8")) report("ok", `The CLI at ${shown(cliFile())} is up to date.`);
     else if (served !== null) report("fix", `The CLI at ${shown(cliFile())} is out of date; run \`usual-base update\`.`);
     if (alias.state === "missing") report("fix", `\`${ALIAS}\` isn't installed; run \`usual-base update\`.`);
     if (alias.state === "taken") report("note", `${shown(alias.path)} is another program, so \`${ALIAS}\` isn't this CLI.`);
   }
+  // A package manager's launcher runs the CLI's file, so the command on the PATH is the launcher.
+  const self = process.env.USUAL_BASE_COMMAND ? realpathSync(process.env.USUAL_BASE_COMMAND) : cliFile();
   for (const name of ["usual-base", ALIAS]) {
     if (name === ALIAS && alias && alias.state !== "ok") continue; // said above
     const found = onPath(name);
-    if (found && realpathSync(found) === cliFile()) report("ok", `\`${name}\` runs this CLI.`);
+    if (found && realpathSync(found) === self) report("ok", `\`${name}\` runs this CLI.`);
     else if (found) report("note", `\`${name}\` runs ${shown(found)}, not this CLI.`);
-    else if (!inCheckout()) report("fix", `\`${name}\` isn't on your PATH; add ${shown(dirname(cliFile()))} to it.`);
+    else if (!inCheckout()) report("fix", `\`${name}\` isn't on your PATH; add ${shown(commandDir())} to it.`);
   }
 
   if (!token()) report("note", "Not connected to a server; `usual-base connect` connects this machine.");
@@ -211,7 +216,7 @@ export function onPath(name) {
 /** What `update` would change, for the daily check. */
 export async function outOfDate(signal) {
   const stale = [];
-  if (!inCheckout() && (await servedCli(signal)) !== readFileSync(cliFile(), "utf8")) stale.push("this CLI");
+  if (!inCheckout() && !managedUpdate() && (await servedCli(signal)) !== readFileSync(cliFile(), "utf8")) stale.push("this CLI");
   const files = await skillFiles(signal);
   for (const { dir, link } of installedSkills()) {
     if (!link && staleFiles(dir, files).length) stale.push(`the skill in ${shown(dir)}`);

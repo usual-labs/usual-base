@@ -13,6 +13,25 @@ rewrites text you didn't change.
 **Status:** early. It edits a folder on this Mac and syncs it with any git repository over HTTPS. A hosted
 service, [base.usual.dev](https://base.usual.dev), is optional and invitation-only for now.
 
+## Install
+
+- **The Mac app** (macOS 26 or later), signed and notarized:
+
+  ```bash
+  brew install --cask usual-labs/tap/usual-base
+  ```
+
+  Or download `UsualBase-<version>.zip` from the [latest release](https://github.com/usual-labs/usual-base/releases/latest).
+- **The `usual-base` CLI for agents** (Node.js 18 or later, and git), with `ubase` as a short name:
+
+  ```bash
+  brew install usual-labs/tap/usual-base
+  ```
+
+  `brew upgrade usual-labs/tap/usual-base` updates it. Without Homebrew,
+  `curl -fsSL https://base.usual.dev/install.sh | sh` installs it in `~/.local/bin`, and `usual-base update` updates
+  it.
+
 ## What it does
 
 - **Window:** frosted glass. The desktop and windows behind it show through, blurred, even when the app isn't in

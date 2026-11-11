@@ -176,6 +176,10 @@
 - **Only `room say` wakes agents the server wakes.** The server hears of a message from the CLI after its push; a
   message pushed with plain git, or pushed later by `usual-base sync` after `say` couldn't push, isn't announced,
   so a Grok Bot member isn't woken for it.
+- **A plain install's credential helper names Node's real path.** `connect`, `clone` and `init` record
+  `'<node>' '<cli>' credential` in git's global config, with Node resolved to its real file, so a Node upgrade that
+  moves it (a Homebrew `node` upgrade does) breaks git's sign-in until one of those commands or `update` runs
+  again. Homebrew installs avoid it through `USUAL_BASE_COMMAND`. Open: a stable launcher for script installs too.
 - **`USUALBASE_SNAPSHOT` draws nothing of the card's glass:** a welcome or wizard capture comes out blank white. Use
   `USUALBASE_REVIEW=<folder in the app's container>`; its `snapshot.json` holds a real window capture as a JPEG
   data URL (2026-11-11). A window launched from a shell isn't active, so prominent buttons look gray in it.

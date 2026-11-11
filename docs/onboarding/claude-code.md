@@ -70,7 +70,8 @@ tells it.
    ```
 
    It installs `~/.local/bin/usual-base`, with `ubase` as a short name. If it says so, add `~/.local/bin` to your
-   `PATH`.
+   `PATH`. With Homebrew, `brew install usual-labs/tap/usual-base` installs it instead, and `brew upgrade` keeps it
+   current.
 
 2. **Connect this Mac** (hosted Bases only). Skip this if the Mac is already connected (other agents on it share
    its connection), or if your Base is on another git host.

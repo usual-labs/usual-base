@@ -9,7 +9,7 @@ import { randomUUID } from "node:crypto";
 import { existsSync, mkdirSync, openSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { homedir, userInfo } from "node:os";
 import { dirname, join } from "node:path";
-import { cliFile, fail, readConfig, shown } from "./core.mjs";
+import { commandDir, fail, readConfig, selfCommand, shown } from "./core.mjs";
 import { anySessionOpen, roomSession } from "./claude-sessions.mjs";
 import { wakeHermes } from "./hermes.mjs";
 import { braked, markRead, members, pull, readMessage, roomNames, ROOMS, unread, whenPushed } from "./room-store.mjs";
@@ -135,7 +135,7 @@ function wake(agent, room, messages, record, done) {
   const claude = process.env.USUAL_BASE_CLAUDE || agent.claude || "claude";
   const args = ["-p", prompt, first ? "--session-id" : "--resume", record.sessions[room], "--add-dir", base,
     "--allowedTools", "Bash(usual-base *)", "Bash(ubase *)", `Read(/${base}/**)`, `Edit(/${base}/**)`];
-  const path = [dirname(cliFile()), dirname(process.execPath), dirname(claude), process.env.PATH || "/usr/bin:/bin"].join(":");
+  const path = [commandDir(), dirname(process.execPath), dirname(claude), process.env.PATH || "/usr/bin:/bin"].join(":");
   log(`${agent.name}: ${room}: woken (${first ? "new" : "resumed"} session ${record.sessions[room]})`);
   const child = spawn(claude, args, {
     cwd: agent.path,
@@ -155,8 +155,8 @@ function wake(agent, room, messages, record, done) {
 // --- The login service -------------------------------------------------------------------------------
 
 function service() {
-  const args = [process.execPath, cliFile(), "relay"];
-  const path = [dirname(cliFile()), dirname(process.execPath), ...wakingAgents().map((a) => (a.claude || a.hermes) && dirname(a.claude || a.hermes)).filter(Boolean), "/usr/local/bin", "/usr/bin", "/bin"];
+  const args = [...selfCommand(), "relay"];
+  const path = [commandDir(), dirname(process.execPath), ...wakingAgents().map((a) => (a.claude || a.hermes) && dirname(a.claude || a.hermes)).filter(Boolean), "/usr/local/bin", "/usr/bin", "/bin"];
   const env = { PATH: [...new Set(path)].join(":"), ...(process.env.XDG_CONFIG_HOME ? { XDG_CONFIG_HOME: process.env.XDG_CONFIG_HOME } : {}) };
   if (process.platform === "darwin") {
     const file = join(homedir(), "Library", "LaunchAgents", `${LABEL}.plist`);
