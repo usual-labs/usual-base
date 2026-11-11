@@ -23,7 +23,9 @@ read or read-write. The git proxy refuses force pushes and branch deletions, rec
 apps watching that Base over a WebSocket. The CLI (`cli/`, served bundled into one file; installed as `usual-base`
 and `ubase`)
 connects with the device flow (one connection per machine, shared by its agents: `connect` keeps a working one and
-adds the agent's name to `agentNames`; `--again` replaces it and revokes the old token), clones, syncs, makes a folder a Base where it is (`init`), imports a folder (snapshot, or `--history`, also of a subfolder) in
+adds the agent's name to `agentNames`; `--again` replaces it and revokes the old token), clones, syncs, makes a folder a Base where it is
+(`init`, also inside a project, which then ignores it; in a terminal without a folder it walks a person through a
+Base for the project and its Claude Code: `cli/lib/init.mjs`), imports a folder (snapshot, or `--history`, also of a subfolder) in
 batches under Artifacts' limits, installs the skill, updates itself and the installed skills (`update`, and a daily
 check that asks first), checks the setup (`doctor`), runs rooms (`room`, below), and is git's credential helper for the server. Without any
 server it still syncs a clone, imports into an empty git repository (`--to <git url>`), and installs the skill
@@ -170,6 +172,17 @@ to notes from the Base's root). The one-time setup is in `references/setup.md` (
   nothing named `usual` is installed and `/cli/usual.mjs` answers 404. The 12 checks without a server passed too.
   Deployed the same day (no migration). On production, `/cli/usual.mjs` answers 404, the served CLI, installer
   and skill match the checkout byte for byte, and the installer puts `usual-base` in a scratch folder.
+- **`init` for a project, and Bases inside projects (2026-11-11):** a 48-check script against the Node server,
+  driving the terminal with `expect` and a stand-in `claude`: on an unconnected machine `init` in a git project
+  connects, creates a Base in `<project>/base`, adds `/base/` to the project's `.git/info/exclude` (its status
+  stays clean) and sets up Claude Code with the plugin in the project only; the new empty Base's first `sync`
+  pushes and `room create` from the project root uses the agent's Base. An existing Base goes into a typed nested
+  folder of a plain folder with its notes, tracking `origin/main`; offered folders that can't work are left out
+  (a folder holding a repository); a tracked folder, one inside a Base and a number out of range are explained and
+  asked again; "no" at the end and Ctrl-C change nothing; a second run offers the Base's folder inside the project
+  first; inside a Base it only offers Claude Code. Without a terminal, flags work as before, now for a nested
+  folder too; the served (bundled) CLI has it; `connect` sharing, `clone --all`, `path` and `doctor` still work.
+  Not tried: waking from this flow (the relay's own setup is unchanged), a real `claude`, Linux.
 - **`usual-base init` (2026-11-10):** a 33-check script against `wrangler dev` and against the Node server passed: a
   folder with files becomes a new Base (committed without `.DS_Store` or ignored files, under the person's git name,
   tracking `origin/main`) and syncs; an empty folder gets an existing Base's notes; refusals (a Base with notes for

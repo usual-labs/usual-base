@@ -24,8 +24,11 @@ This machine:
 
 With a Usual Base server (${server}):
   usual-base connect [--name NAME] [--dir DIR]   connect this machine; you approve it in the browser
-  usual-base init [FOLDER] [--base BASE | --name NAME]
-                                                 make a folder a Base where it is; asks which Base without either
+  usual-base init                                in a terminal: a Base for the project you're in; asks which
+                                                 Base, where its folder goes (it may be inside the project) and
+                                                 whether the project's Claude Code uses it, then does it
+  usual-base init FOLDER [--base BASE | --name NAME]
+                                                 make a folder a Base where it is, even inside a project
   usual-base bases                               list the Bases this token can read
   usual-base clone <base>… | --all [--dir DIR]   clone Bases (default folder: ~/Usual Base)
   usual-base import <folder> --name NAME [--history]

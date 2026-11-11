@@ -110,6 +110,17 @@ export function setUpCredentialHelper() {
   git(["config", "--global", "--add", helperKey(), helperCommand()]);
 }
 
+/** A yes or a no from the terminal; Enter takes `fallback`. */
+export async function confirm(rl, prompt, fallback) {
+  for (;;) {
+    const answer = (await ask(rl, prompt)).trim().toLowerCase();
+    if (!answer) return fallback;
+    if (answer === "y" || answer === "yes") return true;
+    if (answer === "n" || answer === "no") return false;
+    console.log("Type y or n.");
+  }
+}
+
 /** One answer from the terminal; Ctrl-C or Ctrl-D stops without changing anything. */
 export function ask(rl, prompt) {
   return new Promise((done, stop) => {

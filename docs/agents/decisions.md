@@ -158,10 +158,23 @@
   a terminal and otherwise says so once on stderr, and an unreachable server is tried again next time. No command
   writes through a linked skill folder: on a maintainer's machine it leads into a checkout.
 - **`usual-base init` makes the folder itself the Base** (maintainer's choice, 2026-11-10), where `import` uploads a
-  copy. It refuses when both the folder and the Base have files rather than combining them, and refuses a folder in
-  a git repository (`import --history` covers those), so it never mixes or overwrites files; a failed init removes
-  the `.git` it made. It adds `.DS_Store` to `.git/info/exclude`, since the app's sync skips it too, and keeps the
-  folder in the CLI's config, so `clone --all` and `path` use it (one folder per Base: the latest).
+  copy. It refuses when both the folder and the Base have files rather than combining them, so it never mixes or
+  overwrites files; a failed init removes the `.git` it made (or the folder, if it made that). It adds `.DS_Store`
+  to `.git/info/exclude`, since the app's sync skips it too, sets `main` to follow `origin/main` from the start, and
+  keeps the folder in the CLI's config, so `clone --all` and `path` use it (one folder per Base: the latest).
+- **A Base can live inside a project** (maintainer, 2026-11-11: "the base folder path might be somewhere nested in
+  the full claude code project folder"). It's a repository of its own, and the project's `.git/info/exclude`
+  ignores it: local, so the project's tracked files don't change, and teammates set up their own. Not a submodule:
+  the Base syncs by itself, never with the project's commits. A folder holding files the project tracks, a
+  repository root, a folder inside another Base, and a folder holding git repositories are refused; the last
+  would end up as broken links in the Base. Claude Code's plugin isn't installed inside a Base.
+- **`usual-base init` without a folder, in a terminal, sets up the project there** (maintainer, 2026-11-11: "an
+  interactive cli for initiating the base for a new project, or connecting it to it"). It asks everything first
+  (connect if needed, which Base or a new one, where its folder goes, Claude Code's name and waking), shows what
+  it will do and asks "Go ahead?"; only connecting happens before that. Offered folders: where the Base already
+  is (inside the project first), `<project>/base`, the project itself, `~/Usual Base/<name>`; any typed folder is
+  checked the same way. One command rather than a new one, since `init` already meant "make this a Base"; with a
+  folder or a flag, or without a terminal, it works as before, for agents.
 - **The server wakes agents on hosted platforms** (maintainer, 2026-11-11: "base.usual.dev making the call"). A
   Grok Bot runs only on a Cursor-hosted computer where a long-running relay isn't documented, while a routine's
   webhook is. The CLI announces each post rather than the server diffing every push, which would walk trees in

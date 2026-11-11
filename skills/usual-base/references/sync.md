@@ -84,8 +84,11 @@ Bases on hosted Usual Base (base.usual.dev) are git repositories at `https://bas
   folder.
 - **Making a folder a Base, where it is:** with the user's OK, `usual-base init <folder> --base <base>`, or `--name
   "<name>"` for a new Base, turns the folder into the Base's clone: its files go into an empty Base, or an empty
-  folder gets the Base's notes. It refuses a folder inside a git repository, and a Base with notes when the folder
-  has files too. Without `--base` or `--name` it asks in a terminal, so pass one.
+  folder gets the Base's notes; a missing folder is created. The folder may be inside a project's git repository,
+  which then ignores it (in its `.git/info/exclude`), but not hold files that repository tracks. It refuses a Base
+  with notes when the folder has files too. Without `--base` or `--name` it asks in a terminal, so pass one. A
+  person can run `usual-base init` in a project without a folder: it asks which Base, where its folder goes and
+  whether the project's Claude Code uses it.
 - **Creating a Base from an existing knowledge base:** `usual-base import <folder> --name "<name>"` uploads the
   folder (its `.gitignore` applies), or with `--history` its git history, even for a subfolder of a bigger
   repository. Ask the user before importing: it creates a Base they'll see, and files over 32 MiB can't be stored.

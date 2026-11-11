@@ -1,10 +1,8 @@
-// Bases on this machine: where they're cloned, making a folder a Base (init), and importing a folder.
+// Bases on this machine: where they're cloned, syncing them, and importing a folder.
 
-import { existsSync, mkdirSync, mkdtempSync, realpathSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { basename, join, relative } from "node:path";
-import { createInterface } from "node:readline";
-import { ask, call, config, fail, git, gitTry, MAX_FILE_BYTES, MAX_OBJECTS } from "./core.mjs";
+import { existsSync, mkdirSync, realpathSync } from "node:fs";
+import { join, relative } from "node:path";
+import { config, fail, git, gitTry, MAX_FILE_BYTES, MAX_OBJECTS } from "./core.mjs";
 
 export function folderName(name) {
   return name.replace(/[\/\\:*?"<>|]/g, "-").replace(/^\.+/, "").trim() || "Base";
@@ -16,21 +14,24 @@ export function initFolder(base) {
   return folder && gitTry(["-C", folder, "config", "--get", "usualbase.base"]).stdout.trim() === base.id ? folder : null;
 }
 
-export function cloneBase(base, root) {
+/** Where this Base is on this machine: the folder `init` made it, or its clone in the Bases folder `root`. */
+export function localFolder(base, root) {
   const kept = initFolder(base);
-  if (kept) {
-    console.log(`${base.name}: already at ${kept}`);
-    return kept;
+  if (kept) return kept;
+  const clone = join(root, folderName(base.name));
+  return existsSync(join(clone, ".git")) && gitTry(["-C", clone, "config", "--get", "usualbase.base"]).stdout.trim() === base.id
+    ? clone
+    : null;
+}
+
+export function cloneBase(base, root) {
+  const here = localFolder(base, root);
+  if (here) {
+    console.log(`${base.name}: already at ${here}`);
+    return here;
   }
   const target = join(root, folderName(base.name));
-  if (existsSync(join(target, ".git"))) {
-    const current = gitTry(["-C", target, "config", "--get", "usualbase.base"]).out.trim();
-    if (current === base.id) {
-      console.log(`${base.name}: already at ${target}`);
-      return target;
-    }
-    fail(`${target} already holds another repository. Use --dir to clone somewhere else.`);
-  }
+  if (existsSync(join(target, ".git"))) fail(`${target} already holds another repository. Use --dir to clone somewhere else.`);
   mkdirSync(root, { recursive: true });
   const result = gitTry(["clone", "--quiet", base.git, target]);
   if (!result.ok) fail(`Couldn't clone ${base.name}: ${result.out.trim()}`);
@@ -61,68 +62,6 @@ export function withoutCredentials(address) {
     return url.href;
   } catch {
     return address;
-  }
-}
-
-// --- Init helpers ------------------------------------------------------------------------------
-
-/** The files a first commit of the folder would hold: its .gitignore and git's own ignore settings apply. */
-export function folderFiles(folder) {
-  const probe = mkdtempSync(join(tmpdir(), "usual-init-"));
-  try {
-    git(["init", "--quiet", "--bare", probe]);
-    const list = git(["--git-dir", probe, "--work-tree", folder, "ls-files", "-z", "--others", "--exclude-standard",
-      "--exclude=.DS_Store"], { cwd: folder, maxBuffer: 1 << 28 });
-    return list.split("\0").filter(Boolean);
-  } finally {
-    rmSync(probe, { recursive: true, force: true });
-  }
-}
-
-/**
- * The Base for `init`: the one --base names, a new one called --name, or the person's choice when there's a
- * terminal to ask in. A folder with files is offered only empty Bases; the server's answer still decides.
- */
-export async function chooseBase(flags, folder, hasFiles, canCreate) {
-  const { bases } = await call("/api/bases");
-  if (typeof flags.base === "string") {
-    return bases.find((b) => b.id === flags.base || b.name === flags.base) || fail(`No Base called ${flags.base}; see \`usual-base bases\`.`);
-  }
-  const create = async (name) => {
-    const { base } = await call("/api/bases", { method: "POST", body: { name } });
-    console.log(`Created Base "${base.name}" (${base.id}).`);
-    return base;
-  };
-  if (typeof flags.name === "string") return create(flags.name);
-  if (!process.stdin.isTTY || !process.stdout.isTTY) {
-    fail("Choose the Base with --base <id or name>, or create one with --name <name>.");
-  }
-  const offered = hasFiles ? bases.filter((b) => !b.lastPushAt) : bases;
-  if (!offered.length && !canCreate) {
-    fail(hasFiles ? "This token has no empty Base to put the folder in, and can't create one." : "This token can't use any Bases yet.");
-  }
-  const rl = createInterface({ input: process.stdin, output: process.stdout });
-  rl.on("SIGINT", () => rl.close());
-  try {
-    if (offered.length) {
-      console.log(`Which Base should ${folder} become?${hasFiles ? " Bases with notes aren't listed, since the folder has files." : ""}`);
-      offered.forEach((base, i) => console.log(`  ${i + 1}. ${base.name} (${base.id})`));
-      if (canCreate) console.log("  n. A new Base");
-      const choices = `1${offered.length > 1 ? `–${offered.length}` : ""}${canCreate ? " or n" : ""}`;
-      for (;;) {
-        const answer = (await ask(rl, `Choose ${choices}: `)).trim().toLowerCase();
-        const number = Number(answer);
-        if (Number.isInteger(number) && number >= 1 && number <= offered.length) return offered[number - 1];
-        if (canCreate && answer === "n") break;
-        console.log(`Type ${choices}.`);
-      }
-    } else {
-      console.log(hasFiles ? "There's no empty Base for the folder's files, so they go into a new one." : "There's no Base yet, so this creates one.");
-    }
-    const suggested = basename(folder);
-    return create((await ask(rl, `Name for the new Base [${suggested}]: `)).trim() || suggested);
-  } finally {
-    rl.close();
   }
 }
 

@@ -36,6 +36,8 @@ What Usual Base gives you today. Anything not listed here doesn't exist yet.
   Hidden files still sync with everything else unless `.gitignore` excludes them.
 - Search before you write (`rg`, `grep`, or your search tool). If a note on the topic exists, update it rather
   than adding a near-duplicate.
+- A Base can be a folder inside your project. The project's git ignores it, so a search of the whole project skips
+  it: search the Base by its path.
 - Notes link to each other with relative links. Follow them for context.
 
 ## Write

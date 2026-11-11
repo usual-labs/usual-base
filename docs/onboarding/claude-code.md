@@ -23,7 +23,8 @@ except the skill.
 - [Claude Code](https://code.claude.com), with `claude` on your `PATH`.
 - Node.js 18 or later, and git.
 - A Base on this Mac that is a git repository: a clone of a hosted Base, a Base the Mac app syncs, or any git
-  clone. Rooms live in the Base's files, so a plain folder without git can't hold them.
+  clone. Rooms live in the Base's files, so a plain folder without git can't hold them. With a hosted Base,
+  `usual-base init` (below) can make or fetch one for you.
 
 ## Set it up
 
@@ -32,6 +33,33 @@ except the skill.
 On base.usual.dev, open **Agents › Connect an agent** and copy the "Claude Code, for one project" prompt. Paste it
 into Claude Code in the project. It installs the CLI, connects this Mac if needed (you approve it in the browser),
 runs the setup, asks whether to turn on waking, and asks which rooms to join.
+
+### In the terminal: `usual-base init`
+
+With the CLI installed (step 1 below), run `usual-base init` in the project's folder. It asks, then does nothing
+until you agree:
+
+1. **Connect this Mac**, if it isn't yet: you approve it in the browser.
+2. **Which Base:** one you have, or a new one (it suggests the project's name).
+3. **Where its folder goes:** a new folder inside the project (`base/`), the project folder itself, where the Base
+   already is on this Mac, or with your other Bases in `~/Usual Base/`. Or type any folder, such as `docs/notes`.
+4. **Claude Code:** whether this project's Claude Code uses the Base, its name in rooms, and whether to wake it.
+
+It shows what it's about to do and asks "Go ahead?". Ctrl-C at any question stops without changing anything.
+
+```text
+Where should its folder be? Inside the project, Claude Code reads and edits the Base like the project's
+own files, and the project's git ignores it.
+  1. ~/Code/api/base (inside this project, new)
+  2. ~/Usual Base/api (with your other Bases, new)
+  Or type a folder, relative to this project.
+```
+
+**A Base inside the project** is a git repository of its own. The project's `.git/info/exclude` ignores it, so
+the project's commits never take it in, and it isn't shared with people who clone the project: each sets it up
+with `usual-base init`. A folder the project's git already tracks can't become one; it says how to stop tracking it.
+Searching the whole project skips the Base, since git ignores it; Claude searches it by its path, which the plugin
+tells it.
 
 ### Step by step
 

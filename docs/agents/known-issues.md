@@ -113,6 +113,14 @@
 - **Only `room say` wakes agents the server wakes.** The server hears of a message from the CLI after its push; a
   message pushed with plain git, or pushed later by `usual-base sync` after `say` couldn't push, isn't announced,
   so a Grok Bot member isn't woken for it.
+- **A Base inside a project is invisible to project-wide searches.** The project's git ignores it, so `rg` (and
+  tools built on it) from the project root skip it; `rg <text> <Base>` and searches inside it work (tried
+  2026-11-11). The skill says to search it by path, and the plugin's session start names the path.
+- **`usual-base sync` without a folder syncs whatever repository it's in.** From a project with a Base inside,
+  `sync -m` would commit and push the project. Agents are told to pass the Base's path; open: make `sync` refuse a
+  repository that isn't a Base when an agent's Base is set up there.
+- **A Base made from an empty folder had no upstream** (fixed 2026-11-11): the first `usual-base sync` failed with
+  "There is no tracking information". `init` now sets `branch.main.remote` and `.merge` before the Base has notes.
 - **Dashboard copy buttons need clipboard access.** Where the browser refuses it (the Claude app's browser pane
   did, 2026-11-11), the button selects the text and tries the old copy command instead, then says "Selected" or
   "Copied". Not yet tried in a regular browser on base.usual.dev.

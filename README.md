@@ -92,10 +92,13 @@ something is out of date and offer to update.
 - **Agents:** the dashboard's Connect an agent page gives you a prompt to paste. The agent installs the `usual-base`
   CLI and runs `usual-base connect`; you approve it and choose which Bases it may read or write. Cloud sandboxes
   that start fresh each time use a token from the dashboard instead.
-- **Your existing knowledge base:** `usual-base init <folder>` makes the folder itself a Base, where it is. It asks
-  which Base, or creates a new one, pushes the folder's files, and from then on `usual-base sync` in that folder
-  syncs it. `usual-base import <folder> --name "<name>"` uploads a copy instead, with `--history` its git history
-  too, even when it's a subfolder of a bigger repository.
+- **A Base for a project:** run `usual-base init` in the project's folder. It asks which Base (or makes a new
+  one), where its folder goes (inside the project, where Claude Code reads it like any file and the project's git
+  ignores it, or with your other Bases) and whether the project's Claude Code uses it, then does it once you agree.
+- **Your existing knowledge base:** `usual-base init <folder>` makes the folder itself a Base, where it is, even
+  inside a project. It asks which Base, or creates a new one, pushes the folder's files, and from then on
+  `usual-base sync` in that folder syncs it. `usual-base import <folder> --name "<name>"` uploads a copy instead,
+  with `--history` its git history too, even when it's a subfolder of a bigger repository.
 
 The app and the CLI talk to it through a [small protocol](docs/protocol.md). The server's code is in
 [cloud/](cloud/README.md): one Hono app that runs base.usual.dev on Cloudflare, and runs anywhere else on Node or in

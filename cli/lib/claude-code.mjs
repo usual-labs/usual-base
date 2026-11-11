@@ -31,7 +31,14 @@ function settingsRoot(dir) {
   return top.ok ? top.stdout.trim() : dir;
 }
 
-/** Git repositories nested inside `dir` (not `dir`'s own), a few levels down: each has its own local settings. */
+/** A Base: a hosted Base's clone, or a folder the Mac app syncs. */
+const isBase = (dir) => gitTry(["-C", dir, "config", "--get", "usualbase.base"]).ok ||
+  gitTry(["-C", dir, "config", "--get", "usualbase.sync"]).stdout.trim() === "true";
+
+/**
+ * Git repositories nested inside `dir` (not `dir`'s own), a few levels down: each has its own local settings. A
+ * Base inside the project isn't one of them: the plugin's settings have no place in its files.
+ */
 function nestedRoots(dir, depth = 4) {
   const found = [];
   const walk = (folder, level) => {
@@ -39,7 +46,10 @@ function nestedRoots(dir, depth = 4) {
     for (const entry of readdirSync(folder, { withFileTypes: true })) {
       if (!entry.isDirectory() || entry.name.startsWith(".") || SKIPPED.has(entry.name)) continue;
       const child = join(folder, entry.name);
-      if (existsSync(join(child, ".git"))) found.push(child);
+      if (existsSync(join(child, ".git"))) {
+        if (isBase(child)) continue;
+        found.push(child);
+      }
       walk(child, level + 1);
     }
   };
