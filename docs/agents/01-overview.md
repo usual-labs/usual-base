@@ -220,8 +220,9 @@ to notes from the Base's root). The one-time setup is in `references/setup.md` (
   an announcement without a token is refused. The brake (the Bot's reply and 9 of another member's: 8 calls, then
   none); a routine answering 500 tried three times, 2 s and 8 s apart, shown as HTTP 500; 20 wakes in the hour, then
   none; "Stop waking it". Afterwards rooms 31 (plain and Node), Hermes 17, Claude Code 42 and end-to-end 47 still
-  pass, and the relay woke on a push event 196 ms after the post. Not tried: a real Grok Bot, the deploy (migration
-  `0001_wake-targets`).
+  pass, and the relay woke on a push event 196 ms after the post. Deployed to base.usual.dev on 2026-11-11 (migration
+  `0001_wake-targets` applied; the served CLI announces posts, and the announce route refuses a request without a
+  token). Not tried: a real Grok Bot.
 - **CLI without a server (2026-11-09):** a script with the server address on a closed port passed 12 checks:
   grouped help, the skill installed from the checkout byte for byte, `import --to` a bare repository (snapshot
   with `.gitignore`, and `--history` of a subfolder), a second import into a repository with history refused
