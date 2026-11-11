@@ -182,7 +182,10 @@ to notes from the Base's root). The one-time setup is in `references/setup.md` (
   asked again; "no" at the end and Ctrl-C change nothing; a second run offers the Base's folder inside the project
   first; inside a Base it only offers Claude Code. Without a terminal, flags work as before, now for a nested
   folder too; the served (bundled) CLI has it; `connect` sharing, `clone --all`, `path` and `doctor` still work.
-  Not tried: waking from this flow (the relay's own setup is unchanged), a real `claude`, Linux.
+  Deployed to base.usual.dev on 2026-11-11 (`e8b9fcc`, from a clean worktree, no migration): the served CLI has
+  the project flow and its help, `init` without a connection says to connect, and `/skill.json` has the new
+  search and `init` wording. Not tried: waking from this flow (the relay's own setup is unchanged), a real
+  `claude`, Linux.
 - **`usual-base init` (2026-11-10):** a 33-check script against `wrangler dev` and against the Node server passed: a
   folder with files becomes a new Base (committed without `.DS_Store` or ignored files, under the person's git name,
   tracking `origin/main`) and syncs; an empty folder gets an existing Base's notes; refusals (a Base with notes for
