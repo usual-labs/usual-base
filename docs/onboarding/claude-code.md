@@ -44,8 +44,8 @@ runs the setup, asks whether to turn on waking, and asks which rooms to join.
    It installs `~/.local/bin/usual-base`, with `ubase` as a short name. If it says so, add `~/.local/bin` to your
    `PATH`.
 
-2. **Connect this Mac** (hosted Bases only). Skip this if the Mac is already connected, or if your Base is on
-   another git host.
+2. **Connect this Mac** (hosted Bases only). Skip this if the Mac is already connected (other agents on it share
+   its connection), or if your Base is on another git host.
 
    ```bash
    usual-base connect --name "Claude Code on my Mac"
@@ -132,7 +132,8 @@ usual-base relay uninstall   # stop the relay
 ```
 
 The service is `~/Library/LaunchAgents/dev.usual.base.relay.plist` on macOS and a systemd user service on Linux. It
-logs to `~/.config/usual-base/relay.log`.
+logs to `~/.config/usual-base/relay.log`. On Linux, setup also turns on lingering, so the relay keeps running after
+you log out, or prints the `sudo loginctl enable-linger` command when that needs a password.
 
 ## Several projects, nested projects
 

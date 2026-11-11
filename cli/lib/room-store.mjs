@@ -8,7 +8,7 @@
 import { existsSync, mkdirSync, readFileSync, readdirSync, realpathSync, statSync, writeFileSync } from "node:fs";
 import { hostname } from "node:os";
 import { basename, dirname, join, relative, resolve, sep } from "node:path";
-import { basesDir, config, fail, git, gitTry, server, shown, token } from "./core.mjs";
+import { basesDir, config, fail, git, gitTry, server, sharedBy, shown, token } from "./core.mjs";
 import { folderName, syncRepo } from "./bases.mjs";
 
 export const ROOMS = "Rooms";
@@ -68,12 +68,19 @@ export function localBases(flags) {
 
 /**
  * Who is reading and writing: --as, USUAL_BASE_NAME, the agent set up for this project (so a Claude Code session in
- * it speaks as that agent), the name this machine connected with, or git's user name.
+ * it speaks as that agent), the name this machine connected with, or git's user name. When several agents share
+ * the machine's connection, it doesn't guess: speaking or reading as another agent would mark its messages read.
  */
 export function readerName(base, flags) {
   if (typeof flags.as === "string" && flags.as.trim()) return flags.as.trim();
-  return process.env.USUAL_BASE_NAME || agentHere()?.name || config.name ||
-    gitTry(["-C", base, "config", "user.name"]).stdout.trim() || `Agent on ${hostname()}`;
+  const named = process.env.USUAL_BASE_NAME || agentHere()?.name;
+  if (named) return named;
+  const sharing = sharedBy();
+  if (sharing.length > 1) {
+    fail(`Agents on this machine share one connection (${sharing.map((n) => `"${n}"`).join(", ")}), so say which one ` +
+      `you are: add --as "<your name>", or set USUAL_BASE_NAME.`);
+  }
+  return config.name || gitTry(["-C", base, "config", "user.name"]).stdout.trim() || `Agent on ${hostname()}`;
 }
 
 export function roomNames(base) {

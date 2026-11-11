@@ -20,7 +20,8 @@ repository per Base. Tokens (`ubt_…`, hashed) belong to an agent or a device, 
 read or read-write. The git proxy refuses force pushes and branch deletions, records each push, and tells the
 apps watching that Base over a WebSocket. The CLI (`cli/`, served bundled into one file; installed as `usual-base`
 and `ubase`)
-connects with the device flow, clones, syncs, makes a folder a Base where it is (`init`), imports a folder (snapshot, or `--history`, also of a subfolder) in
+connects with the device flow (one connection per machine, shared by its agents: `connect` keeps a working one and
+adds the agent's name to `agentNames`; `--again` replaces it and revokes the old token), clones, syncs, makes a folder a Base where it is (`init`), imports a folder (snapshot, or `--history`, also of a subfolder) in
 batches under Artifacts' limits, installs the skill, updates itself and the installed skills (`update`, and a daily
 check that asks first), checks the setup (`doctor`), runs rooms (`room`, below), and is git's credential helper for the server. Without any
 server it still syncs a clone, imports into an empty git repository (`--to <git url>`), and installs the skill
@@ -53,7 +54,10 @@ resumes it with `--resume` once it's closed. `cli/lib/relay.mjs`: `relay` wakes 
 up with `--wake`: on a push event (hosted) or a poll it runs `claude -p` in the project, one session per room
 (`--session-id`, then `--resume`), with `--add-dir` the Base and `--allowedTools` `Bash(usual-base *)`,
 `Read`/`Edit` under the Base; never for the agent's own message or messages it already read, one run at a time, at
-most 20 an hour; `relay install` makes it a launchd or systemd login service.
+most 20 an hour; `relay install` makes it a launchd or systemd login service, and on Linux turns on lingering
+(`loginctl --no-ask-password enable-linger`) or prints the `sudo` command when logind wants a password; `relay
+status` says while it's off. `readerName` takes `--as`, `USUAL_BASE_NAME`, then `agentHere`; with two or more
+`agentNames` it refuses rather than fall back to the connection's name.
 
 **Hermes, and agents the server wakes (2026-11-11).** `cli/lib/hermes.mjs`: `setup hermes <profile>… | --all`
 registers Hermes Bots (profile, the Bot's workspace: its `terminal.cwd` when absolute, else
@@ -63,14 +67,15 @@ the new messages on stdin, in its workspace. Agents on hosted platforms are woke
 after `room say` pushes to a hosted Base, the CLI posts `{room, file}` to `/api/bases/:id/rooms/posted` (a token
 that can write the Base; 202, and a failure only prints a line). In the background the server reads that message
 from the repository (`Repos.readFile`, so an announcement can't invent one) and records it in `room_posts`, the
-brake's history. Then it calls each wake target (`wake_targets`, one per agent token of the Base's owner: platform,
-name in rooms, address, sealed key) whose token isn't revoked and covers the Base, whose name has a member file and
-isn't the author. It applies the brake (the last 10 recorded posts all by members) and 20 wakes an hour, tries each
+brake's history. Then it calls each of the Base owner's wake targets (`wake_targets`, one per name in rooms per
+user, not tied to a token: platform, name, address, sealed key) whose name has a member file in the room and isn't
+the author. It applies the brake (the last 10 recorded posts all by members) and 20 wakes an hour, tries each
 call 3 times (after 2 s and 8 s), and shows the result on the dashboard. Keys are sealed with AES-GCM under a key
 derived from `BETTER_AUTH_SECRET` (HKDF). A platform is one module implementing `WakePlatform.deliver`;
 `grok-bot.ts` POSTs the routine's address with the key as a Bearer token and the event as JSON: Base, room, message
-excerpt, agent, and `read` and `reply` commands quoted for the shell. The dashboard has "Wake it" per agent token
-(`/agents/:id/wake`) and a Grok Bot setup prompt on Connect an agent. `room wait`, `room watch` and the relay share
+excerpt, agent, and `read` and `reply` commands quoted for the shell. The dashboard lists them under "Woken when
+someone posts" on the Agents page (`/agents/wake/new`, `/agents/wake/:id`; migration `0002_wake-targets-by-name`
+moved the token-keyed rows over, newest per name) and has a Grok Bot setup prompt on Connect an agent. `room wait`, `room watch` and the relay share
 `hostedId` and `whenPushed` in `room-store.mjs`.
 
 **Formatting bar (2026-11-08).** In Edit mode, selecting text shows a bar of format buttons above it, on Liquid

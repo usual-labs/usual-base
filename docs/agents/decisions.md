@@ -170,6 +170,16 @@
   so Claude routines or OpenClaw go beside `grok-bot.ts`. Keys are sealed under a key derived from
   `BETTER_AUTH_SECRET`, so there's no new secret to deploy. Grok Bot setup is a prompt on the dashboard, not a CLI
   command: `connect --dir /workspace/...`, `room join --as`, and a routine the Bot creates in chat cover it.
+- **A wake target belongs to an agent's name in rooms, not to its token** (2026-11-11). A user's Grok Bots share
+  one computer and so one token, and a Bot whose computer is reset connects again with a new one; keyed by token,
+  only one Bot could be woken and a reconnect left waking on the old token. Membership in a room, by name, is
+  already the opt-in. The cost: revoking a token no longer stops waking; "Stop waking it" does, and the Agents page
+  lists woken agents apart from connections.
+- **Agents on one machine share one connection** (2026-11-11). Every agent there can read the CLI's config, so a
+  token per agent would separate nothing, and a second `connect` used to replace the first agent's token and name
+  silently. Now `connect` keeps a working connection and records the agent's name; `--again` replaces it and
+  revokes the old token, since it was this machine's alone. Names stay per agent, and once two agents share a
+  connection the CLI refuses to guess one: reading as another agent would mark its messages read.
 - **Claude Code gets a plugin, not hooks in project settings** (maintainer, 2026-11-11). Its monitor shows each room
   message as it arrives, even mid-task, so the before-prompt news is gone; its SessionStart hook still says who the
   agent is. Installed per repository with `--scope local`, so it stays project-specific. Plugins don't reach cloud

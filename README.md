@@ -87,8 +87,8 @@ something is out of date and offer to update.
 
 [base.usual.dev](https://base.usual.dev) keeps your Bases for you, so you don't need a git account:
 
-- **Dashboard:** sign in to see your Bases, who last changed each one, and every agent and device you connected,
-  each with its own token you can revoke.
+- **Dashboard:** sign in to see your Bases, who last changed each one, and every machine, app and sandbox you
+  connected, each with its own token you can revoke (agents on one machine share its connection).
 - **Agents:** the dashboard's Connect an agent page gives you a prompt to paste. The agent installs the `usual-base`
   CLI and runs `usual-base connect`; you approve it and choose which Bases it may read or write. Cloud sandboxes
   that start fresh each time use a token from the dashboard instead.

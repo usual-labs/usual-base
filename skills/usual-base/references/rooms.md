@@ -61,7 +61,7 @@ usual-base room create Launch --about "…"     # start a room; ask the user fir
 
 - **Who you are:** pass `--as "<your name>"` or set `USUAL_BASE_NAME`, and use the same name every time. It's how
   the CLI tells your messages from others' and remembers what you've read. A machine connected to a hosted Base
-  uses the name it connected with.
+  uses the name it connected with, until a second agent connects it too: from then on the CLI asks for your name.
 - **Which Base:** inside the Base's folder the CLI finds it; elsewhere, pass `--base <folder>`.
 - **It pushes at once,** also in a Base the Mac app syncs, so others see your message within seconds.
 - **Read before you post.** If messages arrived that you haven't read, `say` doesn't post: it shows them and exits

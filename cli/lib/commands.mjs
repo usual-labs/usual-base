@@ -3,7 +3,7 @@
 import { existsSync, lstatSync, mkdtempSync, readFileSync, realpathSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { homedir, hostname, tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { basesDir, call, config, fail, git, gitTry, MAX_FILE_BYTES, server, setUpCredentialHelper, shown, token, writeConfig } from "./core.mjs";
+import { basesDir, call, config, DEFAULT_SERVER, fail, git, gitTry, MAX_FILE_BYTES, server, setUpCredentialHelper, sharedBy, shown, token, VERSION, writeConfig } from "./core.mjs";
 import { checkSizes, chooseBase, cloneBase, folderFiles, folderName, historyHead, initFolder, pushInBatches, snapshot, syncRepo, withoutCredentials } from "./bases.mjs";
 import { roomActions } from "./rooms.mjs";
 import { readerName, roomsBase } from "./room-store.mjs";
@@ -11,39 +11,82 @@ import { doctor, linkedTo, skillFiles, update, writeSkill } from "./upkeep.mjs";
 
 // --- Commands ----------------------------------------------------------------------------------
 
+const access = (token) => `${token.scope === "write" ? "read and write" : "read only"}, ${token.allBases ? "all Bases" : `${token.baseIds.length} Bases`}`;
+
+/** The token this machine saved for this server, if any (not USUAL_BASE_TOKEN: that one isn't the machine's). */
+const savedToken = () => (config.token && (config.server || DEFAULT_SERVER) === server ? config.token : null);
+const withToken = (secret, path, method = "GET") => fetch(server + path, {
+  method,
+  headers: { authorization: `Bearer ${secret}`, "user-agent": `usual-cli/${VERSION}` },
+  signal: AbortSignal.timeout(30_000),
+});
+
+/** What this machine's saved connection may do, or null when it has none, or none that still works. */
+async function savedConnection() {
+  if (!savedToken()) return null;
+  const response = await withToken(savedToken(), "/api/me");
+  if (response.status === 401) return null; // revoked
+  if (!response.ok) fail(`${server}/api/me answered HTTP ${response.status}; try again later.`);
+  return response.json();
+}
+
 export const commands = {
+  /**
+   * Connects this machine. Its agents share one connection: once it has one that works, another agent's `connect`
+   * keeps it and only adds that agent's name, unless --again asks for a new one (other Bases or access).
+   */
   async connect({ flags }) {
-    const name = typeof flags.name === "string" ? flags.name : `Agent on ${hostname()}`;
-    const start = await call("/api/connect", { method: "POST", body: { name, kind: "agent" }, auth: false });
-    console.log(`To connect "${name}", open:\n\n  ${start.verification_uri_complete}\n`);
-    console.log(`and check that it shows the code ${start.user_code}. Waiting for approval…`);
-    const deadline = Date.now() + start.expires_in * 1000;
-    let result;
-    while (Date.now() < deadline) {
-      await new Promise((done) => setTimeout(done, start.interval * 1000));
-      result = await call("/api/connect/token", { method: "POST", body: { device_code: start.device_code }, auth: false });
-      if (result.status !== "pending") break;
+    const name = typeof flags.name === "string" && flags.name.trim() ? flags.name.trim() : `Agent on ${hostname()}`;
+    const current = flags.again ? null : await savedConnection();
+    let dir = basesDir(flags);
+    if (current) {
+      dir = config.dir || dir;
+      Object.assign(config, { agentNames: [...new Set([...sharedBy(), name])] });
+      writeConfig(config);
+      console.log(`This machine is already connected as "${config.name}" (${access(current.token)}). Its agents share ` +
+        `that connection${name === config.name ? "" : `, so "${name}" uses it too`}; \`usual-base connect --again\` replaces it.`);
+    } else {
+      const start = await call("/api/connect", { method: "POST", body: { name, kind: "agent" }, auth: false });
+      console.log(`To connect "${name}", open:\n\n  ${start.verification_uri_complete}\n`);
+      console.log(`and check that it shows the code ${start.user_code}. Waiting for approval…`);
+      const deadline = Date.now() + start.expires_in * 1000;
+      let result;
+      while (Date.now() < deadline) {
+        await new Promise((done) => setTimeout(done, start.interval * 1000));
+        result = await call("/api/connect/token", { method: "POST", body: { device_code: start.device_code }, auth: false });
+        if (result.status !== "pending") break;
+      }
+      if (result?.status === "denied") fail("The connection was denied.");
+      if (result?.status !== "approved") fail("The code expired. Run `usual-base connect` again.");
+      // --again: the old token was this machine's alone, so it goes once the new one is saved.
+      const old = flags.again && savedToken() && { secret: savedToken(), name: config.name };
+      Object.assign(config, { server, token: result.token, tokenId: result.token_id, name, dir, agentNames: [name] });
+      writeConfig(config);
+      setUpCredentialHelper();
+      console.log(`\nConnected as "${name}".`);
+      if (old) {
+        const status = await withToken(old.secret, "/api/token/revoke", "POST").then((r) => r.status, () => 0);
+        if (status === 200) console.log(`Revoked the connection it replaces, "${old.name}".`);
+        else if (status !== 401) console.log(`Couldn't revoke the connection it replaces, "${old.name}"; revoke it in ${server}/agents.`);
+      }
     }
-    if (result?.status === "denied") fail("The connection was denied.");
-    if (result?.status !== "approved") fail("The code expired. Run `usual-base connect` again.");
-    const dir = basesDir(flags);
-    writeConfig({ ...config, server, token: result.token, tokenId: result.token_id, name, dir });
-    config.token = result.token;
-    setUpCredentialHelper();
-    console.log(`\nConnected as "${name}".`);
     if (!flags["no-clone"]) await commands.clone({ args: [], flags: { ...flags, all: true, dir } });
     if (!flags["no-skill"]) await commands.skill({ flags });
+    // An agent sharing the connection names itself in rooms; the first one is the connection's name.
+    const asLine = current
+      ? `\n- In its rooms I am "${name}": I add --as "${name}" to \`usual-base room\` commands and to \`usual-base sync -m\`.`
+      : "";
     console.log(`
 Add these lines to your global instructions (for example ~/.claude/CLAUDE.md or ~/.codex/AGENTS.md):
 
 - Usual Base: ${dir} holds my Bases, git clones of ${server}. Run \`usual-base sync\` in a Base before reading and after committing.
-- Use the usual-base skill to look things up there before asking, and to save what should outlast this session.`);
+- Use the usual-base skill to look things up there before asking, and to save what should outlast this session.${asLine}`);
   },
 
   async whoami() {
     const me = await call("/api/me");
-    const t = me.token;
-    console.log(`${me.user.name} <${me.user.email}> via "${t.name}" (${t.scope === "write" ? "read and write" : "read only"}, ${t.allBases ? "all Bases" : `${t.baseIds.length} Bases`}) on ${server}`);
+    console.log(`${me.user.name} <${me.user.email}> via "${me.token.name}" (${access(me.token)}) on ${server}`);
+    if (sharedBy().length > 1) console.log(`Agents sharing this connection: ${sharedBy().map((n) => `"${n}"`).join(", ")}.`);
   },
 
   async bases({ flags }) {
@@ -85,7 +128,7 @@ Add these lines to your global instructions (for example ~/.claude/CLAUDE.md or 
     }
 
     const me = await call("/api/me");
-    if (me.token.scope !== "write") fail("This token can only read. Run `usual-base connect` again and allow writing.");
+    if (me.token.scope !== "write") fail("This token can only read. Run `usual-base connect --again` and allow writing.");
     const files = folderFiles(folder);
     const tooBig = files.filter((file) => lstatSync(join(folder, file)).size > MAX_FILE_BYTES);
     if (tooBig.length) fail(`Files over 32 MiB can't be stored; remove or ignore them first:\n  ${tooBig.join("\n  ")}`);
@@ -215,7 +258,7 @@ Add these lines to your global instructions (for example ~/.claude/CLAUDE.md or 
   },
 
   async logout() {
-    writeConfig({ ...config, token: undefined, tokenId: undefined });
+    writeConfig({ ...config, token: undefined, tokenId: undefined, agentNames: undefined });
     gitTry(["config", "--global", "--unset-all", `credential.${server}.helper`]);
     console.log(`Signed out on this machine. Revoke the token in ${server}/agents to cut it off everywhere.`);
   },

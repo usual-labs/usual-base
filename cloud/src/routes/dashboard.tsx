@@ -207,38 +207,51 @@ dashboard.post("/agents", async (c) => {
 
 // --- Waking an agent that lives on another platform (src/wake/) --------------------------------
 
-async function agentToken(c: Context<AppEnv>, userId: string) {
-  const token = (await listTokens(c.env, userId)).find((t) => t.id === c.req.param("id"));
-  return token?.kind === "agent" ? token : null;
+const platforms = Object.values(PLATFORMS);
+
+async function wakeForm(c: Context<AppEnv>) {
+  const form = await c.req.parseBody();
+  return {
+    platform: String(form.platform ?? ""), name: cleanName(form.name) ?? "",
+    url: String(form.url ?? "").trim(), secret: String(form.secret ?? "").trim(),
+  };
 }
 
-dashboard.get("/agents/:id/wake", async (c) => {
+dashboard.get("/agents/wake/new", async (c) => {
   const user = await requireUser(c);
   if (user instanceof Response) return user;
-  const token = await agentToken(c, user.id);
-  if (!token) return c.notFound();
-  const target = await wakeTargetOf(c.env, user.id, token.id);
-  return c.html(<WakePage user={user} token={token} target={target} platforms={Object.values(PLATFORMS)} />);
+  return c.html(<WakePage user={user} target={null} platforms={platforms} />);
 });
 
-dashboard.post("/agents/:id/wake", async (c) => {
+dashboard.post("/agents/wake/new", async (c) => {
   const user = await requireUser(c);
   if (user instanceof Response) return user;
-  const token = await agentToken(c, user.id);
-  if (!token) return c.notFound();
-  const form = await c.req.parseBody();
-  const error = await saveWakeTarget(c.env, user.id, token.id, {
-    platform: String(form.platform ?? ""), name: cleanName(form.name) ?? token.name,
-    url: String(form.url ?? "").trim(), secret: String(form.secret ?? "").trim(),
-  });
-  if (error) {
-    const target = await wakeTargetOf(c.env, user.id, token.id);
-    return c.html(<WakePage user={user} token={token} target={target} platforms={Object.values(PLATFORMS)} error={error} />, 400);
-  }
+  const input = await wakeForm(c);
+  const error = await saveWakeTarget(c.env, user.id, null, input);
+  if (error) return c.html(<WakePage user={user} target={null} platforms={platforms} entered={input} error={error} />, 400);
   return c.redirect("/agents", 303);
 });
 
-dashboard.post("/agents/:id/wake/delete", async (c) => {
+dashboard.get("/agents/wake/:id", async (c) => {
+  const user = await requireUser(c);
+  if (user instanceof Response) return user;
+  const target = await wakeTargetOf(c.env, user.id, c.req.param("id"));
+  if (!target) return c.notFound();
+  return c.html(<WakePage user={user} target={target} platforms={platforms} />);
+});
+
+dashboard.post("/agents/wake/:id", async (c) => {
+  const user = await requireUser(c);
+  if (user instanceof Response) return user;
+  const target = await wakeTargetOf(c.env, user.id, c.req.param("id"));
+  if (!target) return c.notFound();
+  const input = await wakeForm(c);
+  const error = await saveWakeTarget(c.env, user.id, target.id, input);
+  if (error) return c.html(<WakePage user={user} target={target} platforms={platforms} entered={input} error={error} />, 400);
+  return c.redirect("/agents", 303);
+});
+
+dashboard.post("/agents/wake/:id/delete", async (c) => {
   const user = await requireUser(c);
   if (user instanceof Response) return user;
   await removeWakeTarget(c.env, user.id, c.req.param("id"));

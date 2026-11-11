@@ -115,7 +115,8 @@ usual-base relay uninstall   # stop the relay
 
 On Linux the relay is the systemd user service `usual-base-relay.service`, logging to
 `~/.config/usual-base/relay.log`. A user service stops when you log out of a server unless lingering is on for your
-user; to keep the relay running, turn it on once:
+user, so `--wake` turns lingering on. Where that needs a password, as it often does over SSH, it prints the command
+to run once instead, and `relay status` reminds you until you have:
 
 ```bash
 sudo loginctl enable-linger "$USER"

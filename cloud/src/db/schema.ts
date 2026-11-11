@@ -1,7 +1,7 @@
 // The database schema. After changing it, run `npm run db:generate` to write the next migration.
 
 import { sql } from "drizzle-orm";
-import { check, index, integer, primaryKey, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { check, index, integer, primaryKey, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 
 // --- Better Auth's tables. The property names are Better Auth's field names; its Drizzle adapter maps them.
 
@@ -128,15 +128,16 @@ export const pushes = sqliteTable("pushes", {
 
 /**
  * How base.usual.dev wakes an agent that lives on another platform when someone posts in a room it's a member
- * of (src/wake/). One per agent token; the secret is encrypted with a key derived from BETTER_AUTH_SECRET.
+ * of (src/wake/). One per agent name, not per token: Bots sharing a computer share its token, and an agent that
+ * connects again keeps being woken. The secret is encrypted with a key derived from BETTER_AUTH_SECRET.
  */
 export const wakeTargets = sqliteTable("wake_targets", {
-  tokenId: text("token_id").primaryKey().references(() => tokens.id, { onDelete: "cascade" }),
+  id: text("id").primaryKey(),
   userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
-  /** Which platform module delivers it, such as "grok-bot". */
-  platform: text("platform").notNull(),
   /** The agent's name in rooms: its member file and the `from` of its messages. */
   name: text("name").notNull(),
+  /** Which platform module delivers it, such as "grok-bot". */
+  platform: text("platform").notNull(),
   url: text("url").notNull(),
   secret: text("secret").notNull(),
   createdAt: integer("created_at").notNull(),
@@ -145,7 +146,7 @@ export const wakeTargets = sqliteTable("wake_targets", {
   lastWakeAt: integer("last_wake_at"),
   /** "ok", or what went wrong on the last try, for the dashboard. */
   lastResult: text("last_result"),
-}, (t) => [index("wake_targets_user").on(t.userId)]);
+}, (t) => [uniqueIndex("wake_targets_name").on(t.userId, t.name)]);
 
 /** Room messages the CLI announced after pushing, newest last: who wrote them, for the loop brake. */
 export const roomPosts = sqliteTable("room_posts", {

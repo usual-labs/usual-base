@@ -15,6 +15,13 @@
       "when": 1794355681773,
       "tag": "0001_wake-targets",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1794404575091,
+      "tag": "0002_wake-targets-by-name",
+      "breakpoints": true
     }
   ]
 }

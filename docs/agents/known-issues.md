@@ -113,13 +113,16 @@
 - **Only `room say` wakes agents the server wakes.** The server hears of a message from the CLI after its push; a
   message pushed with plain git, or pushed later by `usual-base sync` after `say` couldn't push, isn't announced,
   so a Grok Bot member isn't woken for it.
-- **One wake target per agent token.** A user's Grok Bots share one computer, so one CLI config and token: only one
-  of them can be woken today. A Grok Bot that connects again after its computer is reset gets a new token, while
-  its wake target stays on the old one.
-- **One connection per user per machine.** `connect` overwrites the saved token, so every agent on a machine shares
-  it and, without `--as` or `USUAL_BASE_NAME`, the name it connected with in rooms. The onboarding guides say so.
-- **The relay as a systemd user service stops at logout** on a headless server unless lingering is on
-  (`loginctl enable-linger`); `relay install` doesn't turn it on. The Hermes guide says so.
+- **Revoking a token doesn't stop waking.** Wake targets belong to agent names, not tokens; "Stop waking it" on
+  the Agents page stops them. A Bot whose token is revoked is still called and then can't read the room.
+- **The first agent on a machine loses its default name when a second connects.** Until then room commands fall
+  back to the connection's name; once `agentNames` holds two, every agent outside a set-up project needs `--as` or
+  `USUAL_BASE_NAME`, including the first, whose printed instructions didn't mention it. The refusal says so.
+- **A connection's dashboard name is the first agent's.** Agents that share it don't rename it, and pushes record
+  that name (`pushes.token_name`); commits carry each agent's own name.
+- **Lingering is turned on only where logind allows it without a password**, usually a local session or root;
+  over SSH `relay install` prints `sudo loginctl enable-linger <user>` instead. Tested with a stand-in `loginctl`,
+  not on a real Linux host yet.
 - **Saved wake keys depend on `BETTER_AUTH_SECRET`.** Rotating it makes them unreadable; deliveries then fail
   ("failed: …" on the dashboard) until each key is saved again.
 - **The hourly wake limit can let one extra through** when two posts arrive at once: both read the target's recent

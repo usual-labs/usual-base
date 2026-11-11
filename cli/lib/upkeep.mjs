@@ -5,7 +5,7 @@ import { accessSync, constants, existsSync, lstatSync, mkdirSync, readFileSync, 
 import { homedir } from "node:os";
 import { basename, delimiter, dirname, join, relative } from "node:path";
 import { createInterface } from "node:readline";
-import { ALIAS, ask, basesDir, call, cliFile, DAY, Failure, gitTry, helperIsThis, inCheckout, readConfig, servedCli, server, setUpCredentialHelper, shown, token, VERSION, writeConfig } from "./core.mjs";
+import { ALIAS, ask, basesDir, call, cliFile, DAY, Failure, gitTry, helperIsThis, inCheckout, readConfig, servedCli, server, setUpCredentialHelper, sharedBy, shown, token, VERSION, writeConfig } from "./core.mjs";
 import { folderName, initFolder } from "./bases.mjs";
 
 /** Brings this machine's CLI, its `ubase` link, the installed skills and git's token helper up to date. */
@@ -86,6 +86,7 @@ export async function doctor({ flags }) {
       const me = await call("/api/me");
       const t = me.token;
       report("ok", `Connected as "${t.name}" (${t.scope === "write" ? "read and write" : "read only"}, ${t.allBases ? "all Bases" : `${t.baseIds.length} Bases`}).`);
+      if (sharedBy().length > 1) report("note", `Agents sharing this connection, each passing its own --as in rooms: ${sharedBy().map((n) => `"${n}"`).join(", ")}.`);
       if (helperIsThis()) report("ok", `git asks this CLI for the token on ${server}.`);
       else report("fix", `git doesn't ask this CLI for the token on ${server}; run \`usual-base update\`.`);
       const { bases } = await call("/api/bases");

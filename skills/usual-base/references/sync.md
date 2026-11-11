@@ -77,7 +77,8 @@ Bases on hosted Usual Base (base.usual.dev) are git repositories at `https://bas
 
 - **The `usual-base` CLI handles the token.** `usual-base connect` saves your token in `~/.config/usual-base/` and
   makes itself git's credential helper for base.usual.dev, so plain `git pull` and `git push` work. Never copy the
-  token anywhere else. In a sandbox the token comes from the `USUAL_BASE_TOKEN` environment variable instead.
+  token anywhere else. Agents on one machine share its connection; each still has its own name in rooms. In a
+  sandbox the token comes from the `USUAL_BASE_TOKEN` environment variable instead.
 - **Commands:** `usual-base bases` lists what you may read; `usual-base clone <base>` (or `--all`) clones into
   `~/Usual Base/`; `usual-base sync` pulls, then pushes your commits; `usual-base path <base>` prints a Base's
   folder.

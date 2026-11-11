@@ -31,6 +31,8 @@ export function writeConfig(config) {
 export const config = readConfig();
 export const server = (process.env.USUAL_BASE_SERVER || config.server || DEFAULT_SERVER).replace(/\/$/, "");
 export const token = () => process.env.USUAL_BASE_TOKEN || config.token;
+/** The agents that connected this machine, which share its one connection: the first is the connection's name. */
+export const sharedBy = () => config.agentNames || (config.name ? [config.name] : []);
 export const basesDir = (flags) =>
   resolve(flags.dir || process.env.USUAL_BASE_DIR || config.dir || join(homedir(), "Usual Base"));
 
@@ -55,7 +57,7 @@ export function parse(argv) {
     if (arg.startsWith("--")) {
       const [key, inline] = arg.slice(2).split("=", 2);
       if (inline !== undefined) flags[key] = inline;
-      else if (argv[i + 1] !== undefined && !argv[i + 1].startsWith("--") && !["all", "history", "no-clone", "no-skill", "json", "anyway", "wake", "remove", "intro", "fresh", "dry-run"].includes(key)) {
+      else if (argv[i + 1] !== undefined && !argv[i + 1].startsWith("--") && !["all", "again", "history", "no-clone", "no-skill", "json", "anyway", "wake", "remove", "intro", "fresh", "dry-run"].includes(key)) {
         flags[key] = argv[++i];
       } else flags[key] = true;
     } else if (arg === "-m") flags.message = argv[++i];

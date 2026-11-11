@@ -4,10 +4,10 @@
 // It runs one wake per agent at a time, never for the agent's own message, pauses on the loop brake, and wakes an
 // agent at most WAKES_PER_HOUR times an hour. `relay install` makes it a login service (launchd or systemd).
 
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { existsSync, mkdirSync, openSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { homedir } from "node:os";
+import { homedir, userInfo } from "node:os";
 import { dirname, join } from "node:path";
 import { cliFile, fail, readConfig, shown } from "./core.mjs";
 import { anySessionOpen, roomSession } from "./claude-sessions.mjs";
@@ -208,6 +208,23 @@ async function runAll(commands) {
   }
 }
 
+/**
+ * A systemd user service stops when its user's last session ends, so on a server the relay would stop at logout.
+ * Lingering keeps it running and starts it at boot. With `enable`, turns it on where logind allows that without a
+ * password; says what to run when it doesn't. Null when it's on, or this isn't Linux with logind.
+ */
+function lingering({ enable }) {
+  if (process.platform !== "linux") return null;
+  const user = userInfo().username;
+  const state = spawnSync("loginctl", ["show-user", user, "--property=Linger", "--value"], { encoding: "utf8" });
+  if (state.error) return null; // no loginctl
+  if (state.status === 0 && state.stdout.trim() === "yes") return null;
+  if (enable && spawnSync("loginctl", ["--no-ask-password", "enable-linger"], { stdio: "ignore" }).status === 0) {
+    return "- Lingering is now on for your user (`loginctl enable-linger`), so the relay keeps running after you log out and starts at boot.";
+  }
+  return `- The relay stops when you log out, since lingering is off for your user. To keep it running, run: sudo loginctl enable-linger ${user}`;
+}
+
 /** Installs (or restarts) the relay as a login service. --dry-run prints what it would install. */
 export async function installRelay(flags = {}) {
   const unit = service();
@@ -219,6 +236,8 @@ export async function installRelay(flags = {}) {
   openSync(relayLog(), "a");
   await runAll(unit.start);
   console.log(`- Waking: on. The relay runs as a login service (${shown(unit.file)}); it logs to ${shown(relayLog())}.`);
+  const linger = lingering({ enable: true });
+  if (linger) console.log(linger);
 }
 
 async function uninstallRelay(flags = {}) {
@@ -234,7 +253,10 @@ function relayStatus() {
   const unit = service();
   const agents = wakingAgents();
   console.log(agents.length ? `Agents to wake: ${agents.map((a) => `"${a.name}" (${shown(a.path)})`).join(", ")}.` : "No agents to wake.");
-  console.log(unit && existsSync(unit.file) ? `Service: ${shown(unit.file)}. Log: ${shown(relayLog())}.` : "Service: not installed.");
+  const installed = unit && existsSync(unit.file);
+  console.log(installed ? `Service: ${shown(unit.file)}. Log: ${shown(relayLog())}.` : "Service: not installed.");
+  const linger = installed && lingering({ enable: false });
+  if (linger) console.log(linger.slice(2));
   const state = loadState();
   for (const agent of agents) {
     const record = state[`${agent.platform}:${agent.path}`];
