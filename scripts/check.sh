@@ -5,6 +5,7 @@ cd "$(dirname "$0")/.."
 
 swift format lint --strict --recursive App Packages/BaseKit/Sources Packages/BaseKit/Tests Packages/BaseKit/Package.swift
 swift test --package-path Packages/BaseKit
+PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s scripts/review -p 'test_*.py'
 
 if [ "${1:-}" != "--fast" ]; then
     xcodebuild build -quiet -project UsualBase.xcodeproj -scheme UsualBase \

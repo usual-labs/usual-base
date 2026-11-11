@@ -38,7 +38,7 @@ struct QuickOpenView: View {
                 .onChange(of: highlighted) { proxy.scrollTo(highlighted) }
             }
             if results.isEmpty {
-                Text(base.paths.isEmpty ? "This Base has no Markdown files yet." : "No file matches “\(query)”.")
+                Text(base.paths.isEmpty ? "This Base has no files yet." : "No file matches “\(query)”.")
                     .foregroundStyle(.secondary)
                     .padding()
             }
@@ -51,9 +51,9 @@ struct QuickOpenView: View {
         let url = URL(filePath: path)
         let folder = url.deletingLastPathComponent().relativePath
         return HStack(spacing: 8) {
-            Image(systemName: "doc.text")
+            Image(FileIcons.file(path))
                 .foregroundStyle(.secondary)
-            Text(url.deletingPathExtension().lastPathComponent)
+            Text(BaseIndex.isMarkdown(path) ? url.deletingPathExtension().lastPathComponent : url.lastPathComponent)
             if folder != "." {
                 Text(folder)
                     .foregroundStyle(.secondary)

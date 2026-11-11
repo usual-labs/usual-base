@@ -111,3 +111,5 @@ git -C "$BASE" show <commit> -- "Ops/Deploying the API.md"
 ```
 
 The app's own commits are named after what changed, such as "Update Deploying the API.md" or "Add 3 files".
+People see the same history in the app's History pane, by author name and first line, so commit under your own
+name with a message that says what changed.

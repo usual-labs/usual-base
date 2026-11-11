@@ -28,6 +28,9 @@
 - **The formatting bar lives inside the text view**, as a subview on `NSGlassEffectView`, not a popover or child
   window. It scrolls with the text, can't take the focus, and needs no window management. A selection that is
   still being dragged hides it, so it doesn't jump while the mouse moves.
+  Its icons get a rounded highlight under the pointer: one `NSBox` behind the stack that moves to the hovered
+  button, from the bar's own tracking area (maintainer's request, 2026-11-08); the pointer turns into a hand over
+  each button and the toolbar's flat buttons.
 - **Inline formats wrap each line separately.** Markers can't span list items or paragraphs, so wrapping the whole
   selection would break the Markdown. When some lines have the format and some don't, the command adds it to the
   rest, as word processors do.
@@ -36,6 +39,79 @@
   and text views that draw no background. SwiftUI's `.containerBackground(.thinMaterial, for: .window)` was tried
   first, but it turns opaque grey when the window isn't active, and the point is to see other windows through it.
   Reduce Transparency still makes it opaque.
+  The window toolbar's background is explicitly hidden so the header adds no separate material over the shared
+  window background; native toolbar controls retain their own styling.
+- **The panes sit on the window's glass; the document sits on a Liquid Glass card** (the maintainer's sketch and
+  request, 2026-11-08). `BaseWindow` lays out the file tree, the card and the History pane in an `HStack`: no
+  `NavigationSplitView`, which adds its own sidebar glass, and no `HSplitView`, which draws divider lines across the
+  glass and the toolbar. The 8 pt gaps beside the card resize the panes by dragging (`PaneResizer`); the widths
+  and the History pane's visibility are app settings, the sidebar's visibility is per scene. The card is SwiftUI's
+  `.glassEffect(.regular.tint(...))` with 12 pt corners, a second glass layer tinted 50% white, or 35% black in
+  Dark Mode (the maintainer wanted it darker there); an opaque white card, plain `.regular` and `.clear` came first, each tried at the maintainer's request
+  (2026-11-08). A tint mixes into the glass rather than lying over it: in captures a white tint made the card
+  grayer in light mode and a lighter gray in Dark Mode, more so at 80%, where Dark Mode's quote text almost
+  vanished. A brighter card needs a translucent fill under the text, not a stronger tint. Text on it is a little lighter than on white. Every scroll area (document, file tree, History) uses the thin overlay
+  scroll bar (`ThinScrollView`, and `.thinScrollers()` for SwiftUI `ScrollView`s), whatever the "Show scroll bars"
+  setting: the maintainer found the solid bar too heavy on the glass. Toolbar buttons and ⌃⌘S / ⌃⌘H
+  show and hide the panes.
+- **The file's name is its menu:** flat text with a chevron (`FileTitleMenu`) offering Rename…, Duplicate,
+  Show in Finder, Copy Path and Move to Trash. The system title is removed, so a flexible `ToolbarSpacer` pushes the
+  rest to the trailing edge. Renaming keeps the extension and the folder (`FileNames`) and doesn't rewrite links to
+  the old name; Move to Trash asks nothing, since the Trash can put it back.
+- **Spell checking marks prose only.** The editor's delegate refuses spelling marks on code, links and Markdown
+  syntax such as link destinations (`EditorTheme.isProse`, read from the styled attributes), because notes full of
+  file names and paths were covered in red underlines. Grammar and Writing Tools are unaffected.
+- **Markdown colours are set per appearance** (`MarkdownColors` in BaseKit, shared by the editor and the viewer):
+  code backgrounds, syntax characters and quiet text (quotes, list markers, done tasks). The system colours they
+  replaced (`quaternarySystemFill`, tertiary and secondary label colours) drew code as near-black boxes and syntax
+  too faint on the glass card in Dark Mode (maintainer's screenshot, 2026-11-08).
+- **Icons are Lucide, as custom SF Symbols** (maintainer's choice, 2026-11-08): thin, plain line icons that suit
+  the flat gray toolbar. Each is a symbol template in the asset catalog, not a plain SVG image or a Swift package, so
+  it scales with the font, takes weights and tints, and works in AppKit (`NSImage(named:)`) and SwiftUI alike; a
+  package would add a dependency for 29 files. SwiftDraw converts the SVGs with one fixed inset so every icon keeps
+  Lucide's relative size (README). Lucide has no filled variants, so the properties card's "Yes" is an outlined
+  check. The file tree's icons take the text's color, not the source list's accent tint (`FileCell`).
+- **The sidebar lists every file and draws its own rows** (maintainer's reference screenshot, 2026-11-08). Markdown
+  opens in the app; other files open in their own app, since the editor holds Markdown only. Rows are 28 pt with
+  16 pt indents. Favorites (star) and the Base's name (library) are dividers with a small icon, a title and a hairline, not tree items: their rows
+  sit at the top level, unindented, and they can't collapse; the dividers start at the margin, left of the
+  chevrons (maintainer's request). A plain `NSOutlineView`
+  (`SidebarOutlineView`, with a 10 pt leading margin) rather than a source list: a source list lays its own
+  selection view over the row, solid accent with white text, and the design wants a soft accent tint with
+  accent-coloured text (`SidebarRowView`, `SidebarColors`). Rows highlight under the pointer, a click on a folder
+  opens or closes it, and only Markdown files can be selected, since the selection is the open document. Closing a
+  folder that holds it deselects instead of letting the outline select the next file. A right-click rings its row
+  with a rounded accent outline; the table's own square ring is turned off (`drawContextMenuHighlightForRow:`).
+  The Icon submenu is one item holding a grid of every folder icon, icons only with names as tooltips
+  (`IconGridView`): a list of 48 ran off the screen.
+- **Favorites and folder icons are kept on this Mac**, per Base, in user defaults (`SidebarSettings`), so the app
+  writes nothing into the Base's files; a rename or trash in the app carries a favorite along. They don't sync to
+  other Macs yet; a file in the Base would, at the cost of a file every agent and git sees. A Favorites row can't
+  expand: the outline needs every row's item to be unique, so a favorite folder reveals itself in the tree
+  instead. A folder icon no longer offered falls back to the plain folder.
+- **The toolbar is: sidebar button and the file's name on the left (no subtitle); the mode button above the card's
+  trailing edge; then History, sync and Quick Open.** The mode button is one icon that shows what a click switches
+  to, like the View menu's ⌘E command: a pencil in View, an eye in Edit. Every toolbar button and the name are flat,
+  not glass (maintainer's request, 2026-11-08): gray (secondary) icons with a rounded highlight under the pointer
+  (`FlatIconButtonStyle`, `hoverHighlight`). The title starts at the card's leading edge and the mode icon ends at its trailing
+  edge (the maintainer's marked screenshot, 2026-11-08, after trying the text column and a 33 pt inset, both too far
+  in). With History closed the mode icon stays just left of History, sync and Quick Open, which sit at the window's
+  trailing edge. The window uses the compact toolbar (`.unifiedCompact`) for a shorter header, so the controls are
+  28 pt tall. The toolbar doesn't know the layout, so a gap
+  (`ToolbarGap`) inside the sidebar button's item and inside the mode button's item takes up the difference,
+  computed from the pane widths and two offsets measured in a window capture (`titleStart`,
+  `buttonsWidth`; remeasure when a toolbar button is added or moved, and note a larger `buttonsWidth` moves the mode
+  icon right). The gaps live inside those items because the
+  toolbar gives even an empty item 44 pt; every item hides the toolbar's shared glass. Highlights overhang without
+  moving anything: the name's reaches 8 pt past the text, so the text and the pencil glyph line up with the card.
+- **The panes slide and blur in and out** (0.3 s, `.smooth`): each pane keeps its width while the space for it
+  opens or closes, clipped, going out of focus and fading as it closes. The title and the switch glide with them,
+  because the gaps animate frame by frame. Hidden panes stay alive, so the file tree keeps its open folders; the
+  History pane reads git only while shown.
+- **History is the file's git log, read-only.** `BaseRepository.history(of:)` follows first parents (sync keeps
+  history straight) and looks at no more than 2,000 commits. It runs on the `SyncEngine` actor, so it never
+  overlaps a sync, and refreshes when the file, the sync status or the file on disk changes. Each row is an author,
+  a relative date and the commit's first line; agents that commit under their own names show up by name.
 - **The internal extension seam is a table, not a plugin API yet.** A new style is a `StyleSpan.Kind` plus a case
   in `EditorTheme`. A new editing helper is a `MarkdownEditing` function plus a command in the coordinator.
 
@@ -58,6 +134,11 @@
 
 ## Agents
 
+- **Browser UI review is a passive Debug tool.** A separate local review build emits paired window captures and
+  native frames; a token-protected loopback server serves plain HTML targets for Codex Browser annotations.
+  AppKit owns the real interface and editing; the browser owns selection and presentation. It does not rebuild
+  the app as HTML or accept input commands. Sample notes and a separate bundle identity isolate review from the
+  user's Base. This keeps the first version small, adds no third-party dependency, and leaves Release untouched.
 - **Agents learn Usual Base from one skill, `skills/usual-base/`,** in the Agent Skills format (`SKILL.md` plus
   `references/`), which Claude Code, Codex, Cursor and Hermes load. Agents without skills read it as
   instructions. Each feature has a row in the skill's feature table and, when it needs more than a paragraph, its
@@ -168,6 +249,15 @@
   the Base syncs by itself, never with the project's commits. A folder holding files the project tracks, a
   repository root, a folder inside another Base, and a folder holding git repositories are refused; the last
   would end up as broken links in the Base. Claude Code's plugin isn't installed inside a Base.
+- **The Mac app creates and connects Bases with a wizard in the card** (maintainer, 2026-11-11: "a nice wizard … when
+  nothing is connected, a cta should be to create a base or connect an existing to folder"). In the card rather
+  than a sheet: it replaces the empty state in place, steps move with transitions, the sign-in sheet stays out of
+  its way (the wizard shows the code itself), and the window capture can see it. Like the CLI it asks everything
+  first and acts only on "Create Base" or "Connect Base"; a created Base is remembered, so trying again after a
+  problem never creates a second. The sandbox only opens folders the person chooses, so "Inside a project" asks
+  for the project folder itself, which lets the app write the project's `info/exclude`; the Base's folder there must
+  be new or empty. Unlike the CLI, connecting into a folder with files is allowed: the app's sync already joins a
+  folder with a Base that has notes, keeping the Base's version and a conflict copy of the folder's.
 - **`usual-base init` without a folder, in a terminal, sets up the project there** (maintainer, 2026-11-11: "an
   interactive cli for initiating the base for a new project, or connecting it to it"). It asks everything first
   (connect if needed, which Base or a new one, where its folder goes, Claude Code's name and waking), shows what
@@ -225,3 +315,5 @@
   [server protocol](../protocol.md), not on base.usual.dev. `cloud/` is public too: the code behind base.usual.dev,
   which also runs on anyone's own server in Docker. Forgejo or Gitea work as well, with accounts, tokens and
   protected branches.
+- **The Mac app keeps hosted clones in a folder chosen once**, not its container, so agents on the same Mac share
+  them; the app is sandboxed, so it keeps a security-scoped bookmark to that folder.

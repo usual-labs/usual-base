@@ -11,7 +11,7 @@ struct SyncStatusButton: View {
         Button {
             if status == .off { base.sync.isSetupShown = true } else { isDetailShown.toggle() }
         } label: {
-            Label(status.title, systemImage: status.symbol)
+            Label(status.title, image: status.symbol)
                 .symbolEffect(.rotate, isActive: status == .syncing)
         }
         .help(status == .off ? "Sync this Base with a git repository" : status.title)
@@ -93,11 +93,11 @@ extension SyncController.Status {
 
     var symbol: String {
         switch self {
-        case .off, .syncing: "arrow.triangle.2.circlepath"
-        case .synced: "checkmark.circle"
-        case .offline: "wifi.slash"
-        case .needsCredentials: "key"
-        case .failed: "exclamationmark.triangle"
+        case .off, .syncing: "lucide.refresh-cw"
+        case .synced: "lucide.circle-check"
+        case .offline: "lucide.wifi-off"
+        case .needsCredentials: "lucide.key-round"
+        case .failed: "lucide.triangle-alert"
         }
     }
 

@@ -72,7 +72,7 @@ extension Renderer {
         var attributes = attributes
         let font = attributes[.font] as? NSFont ?? style.bodyFont
         attributes[.font] = NSFont(descriptor: style.codeFont.fontDescriptor, size: font.pointSize * 0.9) ?? font
-        attributes[.backgroundColor] = NSColor.quaternarySystemFill
+        attributes[.backgroundColor] = MarkdownColors.codeBackground
         result.append(NSAttributedString(string: code, attributes: attributes))
     }
 
@@ -93,12 +93,12 @@ extension Renderer {
             return
         }
         var attributes = attributes
-        attributes[.foregroundColor] = NSColor.secondaryLabelColor
+        attributes[.foregroundColor] = MarkdownColors.secondary
         if !source.isEmpty, attributes[.link] == nil { attributes[.link] = source }
         let font = attributes[.font] as? NSFont ?? style.bodyFont
         let description = node.plainText.isEmpty ? (source as NSString).lastPathComponent : node.plainText
         let piece = NSMutableAttributedString(
-            attributedString: symbol("photo", description: "Image", font: font, color: .secondaryLabelColor))
+            attributedString: symbol("photo", description: "Image", font: font, color: MarkdownColors.secondary))
         piece.append(NSAttributedString(string: " " + description, attributes: attributes))
         piece.addAttributes(attributes, range: NSRange(location: 0, length: 1))
         result.append(piece)
@@ -115,7 +115,7 @@ extension Renderer {
         }
         if raw.hasPrefix("<!--") { return }
         var attributes = attributes
-        attributes[.foregroundColor] = NSColor.secondaryLabelColor
+        attributes[.foregroundColor] = MarkdownColors.secondary
         result.append(NSAttributedString(string: raw, attributes: attributes))
     }
 

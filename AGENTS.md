@@ -33,7 +33,8 @@
   Artifacts namespace), or `npm run build:node` and `npm start` for Node (settings in `cloud/README.md`, data in a
   scratch `DATA_DIR`). A change to `src/app.ts`, the routes or `src/git.ts` runs on both, so try both. Never point
   a test at base.usual.dev's real accounts. `npm run deploy` ships the Cloudflare version.
-- `USUALBASE_NETWORK_TESTS=1` adds the tests that reach GitHub over HTTPS.
+- `USUALBASE_NETWORK_TESTS=1` adds the tests that reach GitHub over HTTPS. `USUALBASE_TEST_REMOTE` and
+  `USUALBASE_TEST_TOKEN` run `GitRemoteTests` against a scratch remote that needs a token (README).
 - To see the app, launch a Debug build with `USUALBASE_OPEN`, `USUALBASE_FILE`, `USUALBASE_MODE` and
   `USUALBASE_SNAPSHOT` (README); `USUALBASE_SELECT` selects text, which shows the formatting bar. The snapshot is
   how an agent sees the window without Screen Recording permission; it doesn't draw translucent controls (known

@@ -2,15 +2,11 @@
 
 Deferred work, roughly in the order the product plan needs it. Status is open unless noted.
 
-- **Live native UI review inside Codex Browser.** Research on 2026-11-08 found
-  [AppKit Inspector](https://github.com/JaminZhou/AppKitInspector), a public-preview Codex plugin with a
-  Debug-only in-process probe. Its README documents native view hierarchy, refreshable captures and semantic
-  targets for Codex Browser comments. Browser clicks select views; browser-to-app input forwarding is not
-  documented. Usual Base's SwiftUI-hosted controls need a compatibility check. Nothing installed or verified
-  locally. [Build macOS Apps + Browser Mirror](https://github.com/MarcoRossini96/build-macos-apps-browser-mirror)
-  provides a live selected-window feed, but explicitly has a read-only viewer, without native element annotations.
-  Neither is yet verified to satisfy the full request: operating the app, inspecting elements and commenting
-  from the same live browser panel.
+- **Browser input forwarding for local UI review.** Live capture, native targets and pause/resume are implemented
+  by `scripts/review.sh`. Operating the app still happens in the native sample window. If needed, add narrowly
+  scoped input to that review process, with stale-frame checks; keep inspection clicks separate from app clicks.
+  Human acceptance of Codex comment delivery is still pending. Paragraph-level targets and finer SwiftUI
+  control targets can follow actual review needs.
 - **A "Set Up an Agent…" sheet in the app** that fills in the open Base's path and remote and copies the setup
   prompt. Ship the skill inside the app bundle, so local agents can copy it from there and the prompt has no
   blanks.
@@ -20,8 +16,8 @@ Deferred work, roughly in the order the product plan needs it. Status is open un
 - **Formatting bar:** a code block for code over several lines (it wraps each line in backticks today), shortcuts
   for lists, and the bar in View mode once rendered text maps back to its source.
 - **Load web pictures in View mode**, asynchronously, and render on a background thread for very large files.
-- **History view:** for the open file, who changed it and when, with diffs, from git history. Replayed commits keep
-  their authors, so this works for agents that commit under their own names.
+- **History pane, next steps:** show a commit's diff or the file as it was, restore a version, follow renames, and
+  mark uncommitted changes at the top.
 - **Merge the open file's unsaved edits** with a change that arrives from outside, using `git_merge_file`, instead
   of saving them as a conflict copy when the edits don't overlap.
 - **Docker image, next:** publish it (GitHub Container Registry, built for arm64 and amd64), a `compose.yaml`

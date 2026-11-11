@@ -13,6 +13,8 @@ final class FormattingBar: NSView {
     private let glass = NSGlassEffectView()
     private let headings = NSPopUpButton(frame: .zero, pullsDown: true)
     private var buttons: [(format: MarkdownFormat, button: NSButton)] = []
+    /// A rounded highlight that sits behind the button under the pointer, so the icons feel like buttons.
+    private let hoverMark = NSBox()
 
     init(onFormat: @escaping (MarkdownFormat) -> Void) {
         self.onFormat = onFormat
@@ -25,6 +27,17 @@ final class FormattingBar: NSView {
         for format in Self.lineFormats { row.addArrangedSubview(makeButton(format)) }
         if let link = buttons.last(where: { $0.format == .link })?.button { row.setCustomSpacing(10, after: link) }
         row.setCustomSpacing(10, after: headings)
+
+        hoverMark.boxType = .custom
+        hoverMark.borderWidth = 0
+        hoverMark.cornerRadius = 6
+        hoverMark.fillColor = NSColor.labelColor.withAlphaComponent(0.1)
+        hoverMark.isHidden = true
+        row.addSubview(hoverMark, positioned: .below, relativeTo: nil)
+        addTrackingArea(
+            NSTrackingArea(
+                rect: .zero, options: [.mouseMoved, .mouseEnteredAndExited, .activeInKeyWindow, .inVisibleRect],
+                owner: self))
 
         glass.contentView = row
         glass.autoresizingMask = [.width, .height]
@@ -60,11 +73,35 @@ final class FormattingBar: NSView {
         headings.contentTintColor = hasHeading ? .controlAccentColor : nil
     }
 
+    override func mouseMoved(with event: NSEvent) {
+        let point = row.convert(event.locationInWindow, from: nil)
+        let controls: [NSView] = buttons.map(\.button) + [headings]
+        guard let control = controls.first(where: { $0.frame.contains(point) }) else {
+            hoverMark.isHidden = true
+            return
+        }
+        hoverMark.frame = control.frame
+        hoverMark.isHidden = false
+    }
+
+    override func mouseExited(with event: NSEvent) {
+        hoverMark.isHidden = true
+    }
+
+    override var isHidden: Bool {
+        didSet { if isHidden { hoverMark.isHidden = true } }
+    }
+
     // Clicks between the buttons stay in the bar instead of reaching the text below.
     override func mouseDown(with event: NSEvent) {}
 
-    override func resetCursorRects() {
-        addCursorRect(bounds, cursor: .arrow)
+    /// The cursor over this point in the window: a hand over a button, an arrow elsewhere on the bar, nil off it.
+    /// The text view asks, since it sets its I-beam on every move and would cover cursor rects.
+    func cursor(at windowPoint: NSPoint) -> NSCursor? {
+        guard !isHidden, bounds.contains(convert(windowPoint, from: nil)) else { return nil }
+        let point = row.convert(windowPoint, from: nil)
+        let controls: [NSView] = buttons.map(\.button) + [headings]
+        return controls.contains { $0.frame.contains(point) } ? .pointingHand : .arrow
     }
 
     // MARK: - Controls
@@ -108,8 +145,10 @@ final class FormattingBar: NSView {
     }
 
     private static func symbol(_ format: MarkdownFormat) -> NSImage? {
-        NSImage(systemSymbolName: format.symbolName, accessibilityDescription: format.title)?
-            .withSymbolConfiguration(NSImage.SymbolConfiguration(pointSize: 13, weight: .medium))
+        let image = NSImage(named: format.symbolName)?.withSymbolConfiguration(
+            NSImage.SymbolConfiguration(pointSize: 13, weight: .regular))
+        image?.accessibilityDescription = format.title
+        return image
     }
 
     @objc private func pressed(_ sender: NSButton) {
@@ -140,16 +179,16 @@ extension MarkdownFormat {
 
     var symbolName: String {
         switch self {
-        case .bold: "bold"
-        case .italic: "italic"
-        case .strikethrough: "strikethrough"
-        case .code: "chevron.left.forwardslash.chevron.right"
-        case .link: "link"
-        case .heading: "textformat.size"
-        case .bulletList: "list.bullet"
-        case .numberedList: "list.number"
-        case .taskList: "checklist"
-        case .quote: "text.quote"
+        case .bold: "lucide.bold"
+        case .italic: "lucide.italic"
+        case .strikethrough: "lucide.strikethrough"
+        case .code: "lucide.code-xml"
+        case .link: "lucide.link"
+        case .heading: "lucide.heading"
+        case .bulletList: "lucide.list"
+        case .numberedList: "lucide.list-ordered"
+        case .taskList: "lucide.list-checks"
+        case .quote: "lucide.text-quote"
         }
     }
 }

@@ -36,6 +36,13 @@ actor SyncEngine {
         try repository?.setSyncEnabled(false)
     }
 
+    /// The commits that changed `path`, or nil when the Base isn't a git repository.
+    func history(of path: String) throws -> [FileChange]? {
+        // The pane can ask before `load` has run.
+        if repository == nil { repository = try BaseRepository.open(folder) }
+        return try repository?.history(of: path)
+    }
+
     func sync(as identity: GitIdentity, credentials: GitCredentials?, fetch: Bool) throws -> SyncReport {
         guard let repository else { throw SyncError.failed("This Base isn’t set up to sync.") }
         return try repository.sync(as: identity, credentials: credentials, fetch: fetch)

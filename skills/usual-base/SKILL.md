@@ -32,8 +32,9 @@ What Usual Base gives you today. Anything not listed here doesn't exist yet.
 
 ## Read and search
 
-- The app shows `.md` and `.markdown` files. It hides dot-folders, `node_modules`, `.build` and `DerivedData`.
-  Hidden files still sync with everything else unless `.gitignore` excludes them.
+- The app's sidebar lists every file: `.md` and `.markdown` notes open in the app, and other files (PDFs,
+  pictures, spreadsheets) open in their own app. It hides dot-files and dot-folders, `node_modules`, `.build`
+  and `DerivedData`. Hidden files still sync with everything else unless `.gitignore` excludes them.
 - Search before you write (`rg`, `grep`, or your search tool). If a note on the topic exists, update it rather
   than adding a near-duplicate.
 - A Base can be a folder inside your project. The project's git ignores it, so a search of the whole project skips

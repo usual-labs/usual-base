@@ -72,7 +72,7 @@ struct Renderer {
         self.style = style
         self.image = image
         uncheckedBox = Self.symbolImage(
-            "square", description: "To do", font: style.bodyFont, color: .secondaryLabelColor)
+            "square", description: "To do", font: style.bodyFont, color: MarkdownColors.secondary)
         checkedBox = Self.symbolImage(
             "checkmark.square.fill", description: "Done", font: style.bodyFont, color: .controlAccentColor)
     }
@@ -137,7 +137,7 @@ struct Renderer {
             if marker.isDone {
                 body.addAttributes(
                     [
-                        .foregroundColor: NSColor.secondaryLabelColor,
+                        .foregroundColor: MarkdownColors.secondary,
                         .strikethroughStyle: NSUnderlineStyle.single.rawValue,
                     ],
                     range: NSRange(location: 0, length: body.length))
@@ -172,7 +172,7 @@ struct Renderer {
         flushMarker(in: context)
         let attributes: [NSAttributedString.Key: Any] = [
             .font: NSFont.monospacedDigitSystemFont(ofSize: style.bodyFont.pointSize, weight: .regular),
-            .foregroundColor: NSColor.secondaryLabelColor,
+            .foregroundColor: MarkdownColors.secondary,
         ]
         let markers = items.enumerated().map { index, item -> NSAttributedString in
             if let checkbox = item.checkbox { return self.checkbox(checked: checkbox == .checked) }
@@ -216,18 +216,18 @@ struct Renderer {
     private mutating func quote(_ quote: BlockQuote, in context: Context) {
         let block = FullWidthTextBlock()
         block.setWidth(3, type: .absoluteValueType, for: .border, edge: .minX)
-        block.setBorderColor(.tertiaryLabelColor, for: .minX)
+        block.setBorderColor(MarkdownColors.syntax, for: .minX)
         block.setWidth(14, type: .absoluteValueType, for: .padding, edge: .minX)
         nest(block, in: context, spacing: 10) { renderer, inner in
             var inner = inner
-            inner.color = .secondaryLabelColor
+            inner.color = MarkdownColors.secondary
             renderer.render(quote.children, in: inner)
         }
     }
 
     private mutating func code(_ code: String, in context: Context) {
         let block = FullWidthTextBlock()
-        block.backgroundColor = .quaternarySystemFill
+        block.backgroundColor = MarkdownColors.codeBackground
         block.setWidth(10, type: .absoluteValueType, for: .padding)
         block.setWidth(14, type: .absoluteValueType, for: .padding, edge: .minX)
         block.setWidth(14, type: .absoluteValueType, for: .padding, edge: .maxX)
@@ -261,7 +261,7 @@ struct Renderer {
         guard !trimmed.isEmpty, !(trimmed.hasPrefix("<!--") && trimmed.hasSuffix("-->")) else { return }
         let text = trimmed.replacingOccurrences(of: "\r\n", with: "\n").replacingOccurrences(of: "\n", with: "\u{2028}")
         let attributes: [NSAttributedString.Key: Any] = [
-            .font: style.codeFont, .foregroundColor: NSColor.secondaryLabelColor,
+            .font: style.codeFont, .foregroundColor: MarkdownColors.secondary,
         ]
         write(NSAttributedString(string: text, attributes: attributes), in: context, spacing: 10)
     }

@@ -16,7 +16,7 @@ extension NSAttributedString.Key {
 enum EditorTheme {
     static let bodyFont = NSFont.systemFont(ofSize: 15)
     static let codeFont = NSFont.monospacedSystemFont(ofSize: 13.5, weight: .regular)
-    static let syntaxColor = NSColor.tertiaryLabelColor
+    static let syntaxColor = MarkdownColors.syntax
 
     static let baseParagraph: NSParagraphStyle = {
         let style = NSMutableParagraphStyle()
@@ -39,6 +39,16 @@ enum EditorTheme {
             apply(span.kind, span.range, to: storage)
         }
         storage.endEditing()
+    }
+
+    /// Whether the character is ordinary text, not code, a link, or Markdown's own syntax (such as a link's
+    /// destination). Reads the attributes `apply` set.
+    static func isProse(at location: Int, in storage: NSTextStorage) -> Bool {
+        let attributes = storage.attributes(at: location, effectiveRange: nil)
+        if attributes[.usualLink] != nil || attributes[.usualBlock] as? String == "code" { return false }
+        if attributes[.foregroundColor] as? NSColor == syntaxColor { return false }
+        let font = attributes[.font] as? NSFont
+        return font?.fontDescriptor.symbolicTraits.contains(.monoSpace) != true
     }
 
     private static func apply(_ kind: StyleSpan.Kind, _ range: NSRange, to storage: NSTextStorage) {
@@ -64,7 +74,7 @@ enum EditorTheme {
             storage.addAttributes([.font: codeFont, .paragraphStyle: codeParagraph, .usualBlock: "code"], range: range)
         case .blockQuote:
             storage.addAttributes(
-                [.foregroundColor: NSColor.secondaryLabelColor, .paragraphStyle: quoteParagraph, .usualBlock: "quote"],
+                [.foregroundColor: MarkdownColors.secondary, .paragraphStyle: quoteParagraph, .usualBlock: "quote"],
                 range: range
             )
         case .listLine(let prefixLength):
@@ -77,13 +87,13 @@ enum EditorTheme {
             style.headIndent = style.firstLineHeadIndent + width
             storage.addAttribute(.paragraphStyle, value: style, range: range)
         case .listMarker:
-            storage.addAttribute(.foregroundColor, value: NSColor.secondaryLabelColor, range: range)
+            storage.addAttribute(.foregroundColor, value: MarkdownColors.secondary, range: range)
         case .taskBox:
             storage.addAttributes([.foregroundColor: NSColor.controlAccentColor, .usualTaskBox: true], range: range)
         case .taskDone:
             storage.addAttributes(
                 [
-                    .foregroundColor: NSColor.secondaryLabelColor,
+                    .foregroundColor: MarkdownColors.secondary,
                     .strikethroughStyle: NSUnderlineStyle.single.rawValue,
                 ],
                 range: range
@@ -91,7 +101,7 @@ enum EditorTheme {
         case .link(let destination):
             storage.addAttributes([.foregroundColor: NSColor.linkColor, .usualLink: destination], range: range)
         case .image, .html:
-            storage.addAttribute(.foregroundColor, value: NSColor.secondaryLabelColor, range: range)
+            storage.addAttribute(.foregroundColor, value: MarkdownColors.secondary, range: range)
         case .table:
             storage.addAttribute(.font, value: codeFont, range: range)
         case .tableHeader:

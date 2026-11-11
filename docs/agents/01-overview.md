@@ -6,6 +6,11 @@
 a styled TextKit 2 editor, with front matter as a properties card. Files save automatically. The app watches the
 folder and reloads when files change outside it.
 
+**Sidebar (2026-11-08).** It lists every visible file, not only Markdown, each with an icon for its kind (Lucide
+icons by extension, `FileIcons`); Markdown opens in the app and other files in their own app. A Favorites section
+holds favorite files and folders above the Base's tree, and a folder can wear one of 48 icons, picked from an icon-only grid. Both are chosen from
+a row's right-click menu and kept on this Mac per Base (`SidebarSettings` in user defaults), not in the Base.
+
 **View and Edit modes (2026-11-07).** A toolbar switch (⌘E). View renders the file natively, without its syntax:
 real tables, task boxes, code and quote blocks, rules and pictures from the Base. It's read-only, and its links open
 with a plain click. Edit is the styled source editor. The mode is remembered, and the app starts in View.
@@ -29,7 +34,12 @@ Base for the project and its Claude Code: `cli/lib/init.mjs`), imports a folder 
 batches under Artifacts' limits, installs the skill, updates itself and the installed skills (`update`, and a daily
 check that asks first), checks the setup (`doctor`), runs rooms (`room`, below), and is git's credential helper for the server. Without any
 server it still syncs a clone, imports into an empty git repository (`--to <git url>`), and installs the skill
-from the checkout it sits in. [docs/protocol.md](../protocol.md) is what the app and CLI expect from a server. Details: [cloud/README.md](../../cloud/README.md).
+from the checkout it sits in. [docs/protocol.md](../protocol.md) is what the app and CLI expect from a server. The Mac app
+signs in the same way (`App/Account/`): a menu atop the sidebar lists the account's Bases and clones one into a
+folder chosen once; while its WebSocket is connected, sync stops polling. With no Base open the card shows a welcome
+with two calls to action, and a wizard in the card (`App/Setup/`, also File › New Base… and Connect a Base to a
+Folder…) creates a Base or connects one to a folder: the Bases folder, a new folder inside a project (whose git then
+ignores it, `EnclosingRepository`) or any folder. Details: [cloud/README.md](../../cloud/README.md).
 
 **Rooms (2026-11-10, CLI only).** `cli/lib/rooms.mjs`: a room is a folder under `Rooms/` with a `ROOM.md` and one
 Markdown file per message in a folder per UTC day, named `<UTC time to the ms>_<writer>_<random>.md`, with front
@@ -90,7 +100,23 @@ the selection already has the format, and the bar lights up the formats the sele
 a white 1024 tile, full-bleed, in `App/Assets.xcassets`. macOS 26 rounds it like any icon. The README shows it too.
 
 **Glass window (2026-11-08).** The whole window is frosted glass: the desktop and other windows show through,
-blurred, even when the app isn't active.
+blurred, even when the app isn't active. The file tree and the History pane sit straight on it, and the document
+on a rounded Liquid Glass card between them; the gaps beside the card resize the panes. The header hides its toolbar
+background and shows the shared window material instead.
+
+**File menu (2026-11-08).** The toolbar shows the open file's name as a glass button; its menu renames,
+duplicates, shows in Finder, copies the path or moves the file to the Trash.
+
+**History pane (2026-11-08).** A pane on the right (toolbar button, ⌃⌘H) lists the commits that changed the open
+file, newest first: who, when, and the commit's first line. A Base that isn't a git repository offers sync instead.
+
+**Local browser review (2026-11-08, Debug only).** `scripts/review.sh` builds an isolated review app and opens
+temporary sample notes. `DebugReview` captures its own window and visible AppKit view frames roughly once per
+second; a Python standard-library server exposes them on an authenticated loopback URL. The browser displays
+semantic HTML targets, a filterable native hierarchy and pause/resume controls. Selecting a target freezes the
+preview for Codex Browser comments. Navigate and edit in the native window; browser input forwarding is not
+implemented. SwiftUI groups without useful NSViews get small opt-in `reviewElement` markers. No capture runs
+without `USUALBASE_REVIEW`, and Release contains no probe. Details and limitations are in the README.
 
 **Git sync (2026-11-06).** A Base can sync with any git repository over HTTPS with a token. The folder is an
 ordinary clone (`.git` inside). Sync is opt-in per Base (`usualbase.sync` in the repository's config). There's no
@@ -172,6 +198,15 @@ to notes from the Base's root). The one-time setup is in `references/setup.md` (
   nothing named `usual` is installed and `/cli/usual.mjs` answers 404. The 12 checks without a server passed too.
   Deployed the same day (no migration). On production, `/cli/usual.mjs` answers 404, the served CLI, installer
   and skill match the checkout byte for byte, and the installer puts `usual-base` in a scratch folder.
+- **The Mac app's Base wizard (2026-11-11):** `EnclosingRepositoryTests` (4: a nested Base ignored in the project's
+  `info/exclude` with its status clean, an existing ignore rule respected, special characters escaped, no repository
+  around). On a scratch Node server with a sandboxed, ad-hoc-signed Debug build driven by `USUALBASE_SETUP` and
+  `USUALBASE_TOKEN`, captured with `USUALBASE_REVIEW`: the welcome card, signing in, name, choosing a Base, the place
+  step (with a project, and with its folder already taken) and review, in dark mode. Runs to the end: a new Base in
+  a project's `base/` (created on the server; the project ignores it and its status stays clean), an existing Base
+  into an empty folder (its notes arrive) and into a folder with files (the Base's version stays, the folder's goes to
+  a conflict copy, its other file is pushed). Not tried: clicking through it (the open panels, Back, the animations),
+  signing in through the browser from the wizard, light mode, the Bases folder chosen for the first time.
 - **`init` for a project, and Bases inside projects (2026-11-11):** a 48-check script against the Node server,
   driving the terminal with `expect` and a stand-in `claude`: on an unconnected machine `init` in a git project
   connects, creates a Base in `<project>/base`, adds `/base/` to the project's `.git/info/exclude` (its status
@@ -278,7 +313,15 @@ to notes from the Base's root). The one-time setup is in `references/setup.md` (
   schema changes against the generated migration. Deployed the same day; the production smoke test passed again,
   plus paths that read the database without writing: an unknown token (401 for the API and git), an unknown
   device code ("expired"), and signing in to an unknown account (Better Auth's error, not a crash).
-- **Checks:** `scripts/check.sh` passes: swift-format lint, 65 BaseKit tests and an unsigned macOS build, with
+
+- **Browser review:** the isolated signed Debug build launches on sample notes. The HTTP feed returns fresh
+  ScreenCaptureKit window captures (no fallback) and a populated native element tree; named toolbar targets have
+  the expected sizes/positions and every rectangle lies inside the window. The page was opened in the in-app
+  browser and exposed the live image and native targets. No automated browser interaction tests or real comment
+  submission were performed. Six HTTP tests cover token/host/origin checks, fixed routes, stale/corrupt captures,
+  headers and the lack of a write API. Release builds successfully and its executable has no review-probe symbols
+  or capture environment variable. Ctrl-C of the first review run exited its owned sample app normally.
+- **Checks:** `scripts/check.sh` passes: swift-format lint, 65 BaseKit tests, six review-server tests and an unsigned macOS build, with
   Xcode 27.1 and the macOS 27 SDK; the deployment target is macOS 26.
 - **Sync tests** (two Bases and a bare repository on disk, git CLI as a second opinion): publish byte for byte (BOM
   and CRLF) without `.DS_Store`, pull, clean merge of different lines with straight history and kept authors, the
@@ -287,6 +330,10 @@ to notes from the Base's root). The one-time setup is in `references/setup.md` (
   existing clones don't sync until connected.
 - **HTTPS** (opt-in `GitNetworkTests`, 2026-11-06): fetching a public GitHub repository works through the system's
   TLS, and a refused token is reported as `authenticationFailed`.
+- **Sync with a token (opt-in `GitRemoteTests`, 2026-11-08):** both directions, a clash with its conflict copy, a
+  refused push that fetches and retries, and a wrong token, all against a private GitHub repository (about 20 s for
+  the suite) and a Cloudflare Artifacts repository (about 11 s) with the code unchanged. Artifacts accepts the full
+  `…?expires=…` token as the Basic password. Also passed through a git proxy Worker in front of Artifacts.
 - **Running app, without the sandbox, against a bare repository on disk (2026-11-06):**
   - opening a connected Base committed and pushed it
   - a file written into the folder was committed and pushed 5 s later; the push was refused because another
@@ -307,8 +354,11 @@ to notes from the Base's root). The one-time setup is in `references/setup.md` (
   built app's icon as a rounded white tile with the slabs centred. Not seen in the Dock or Finder by a person yet.
 - **Glass window (2026-11-08):** lldb on the running Debug app shows `WindowGlass`'s `NSVisualEffectView` filling
   the window behind the content (sidebar material, behind-window, always active) with a window-server-aware
-  backdrop blur, and the text views drawing no background. Not seen by eye: screen capture isn't permitted here, so
-  readability over busy backgrounds, light and dark mode, and the sidebar's glass on top are unchecked.
+  backdrop blur, and the text views drawing no background.
+- **Card, panes and History (2026-11-08):** two `GitHistoryTests` (authors, order, dates, summaries, limit, a deleted
+  file). Real window captures of a sample git Base with four authors: both panes open, left pane only in Edit mode,
+  and the no-git History state; they match the maintainer's sketch, with no divider lines. Not checked: dragging
+  the gaps, the toolbar buttons by mouse, dark mode, a busy desktop behind the glass, and history on a large repo.
 - **Editor:** debug snapshots on a sample Base show every span kind, including the properties card, hanging
   indents, quote bars and code blocks, in light and dark mode. Outside edits reload the open file, and opening a
   file leaves its bytes unchanged.
@@ -316,9 +366,11 @@ to notes from the Base's root). The one-time setup is in `references/setup.md` (
 
 ## Not verified yet
 
-- **The hosted service in use:** nobody has signed up or connected an agent on production yet.
-- **Sync with credentials:** pushing to a private GitHub repository or Cloudflare Artifacts with a token, the
-  keychain item (including prompts after rebuilds of an ad-hoc-signed app) and the setup sheet's flow.
+- **The Mac app's hosted Bases:** it builds and passes lint, but signing in, the Base menu, cloning into the chosen
+  folder, sync with the account's token and live updates haven't been run in the app. Nor has anyone signed up or
+  connected an agent on production yet.
+- **Sync with credentials in the app:** the keychain item (including prompts after rebuilds of an ad-hoc-signed
+  app) and the setup sheet's flow. The sync itself is verified at the BaseKit level (above).
 - **Sync at scale:** thousands of files, large first commits, and how long a sync blocks on a slow network.
 - **Interactive behaviour**, from keyboard and mouse:
   - typing and the editing helpers in the running app (they're unit-tested as text transforms)

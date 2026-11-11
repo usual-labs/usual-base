@@ -22,17 +22,18 @@ class DocumentTextView: NSTextView {
         // The window's glass shows through behind the text.
         drawsBackground = false
 
-        let scrollView = NSScrollView()
+        let scrollView = ThinScrollView()
         scrollView.documentView = self
-        scrollView.hasVerticalScroller = true
-        scrollView.autohidesScrollers = true
-        scrollView.drawsBackground = false
         return scrollView
     }
 
     override func setFrameSize(_ newSize: NSSize) {
+        // A new width rewraps the text, so the same scroll offset would show other lines: keep
+        // the line at the top of the view where it is, as a pane opens or closes.
+        let anchor = newSize.width != frame.width ? topLine() : nil
         super.setFrameSize(newSize)
         layoutChrome()
+        if let anchor { scroll(toTopLine: anchor) }
     }
 
     /// Centres the text at a readable width and keeps the card above it.
@@ -40,7 +41,12 @@ class DocumentTextView: NSTextView {
         let side = max(Self.minSidePadding, (bounds.width - Self.maxLineWidth) / 2)
         let top = Self.topPadding + (cardHeight > 0 ? cardHeight + 18 : 0)
         let inset = NSSize(width: side, height: top)
-        if textContainerInset != inset { textContainerInset = inset }
+        if textContainerInset != inset {
+            textContainerInset = inset
+            // TextKit 2 leaves laid-out text where it was until the viewport is laid out again, so
+            // a card that grows after the first layout would cover the first lines.
+            textLayoutManager?.textViewportLayoutController.layoutViewport()
+        }
         card?.frame = NSRect(x: side, y: Self.topPadding, width: max(bounds.width - 2 * side, 0), height: cardHeight)
     }
 
@@ -68,6 +74,7 @@ class DocumentTextView: NSTextView {
         }
         let measured = AnyView(
             view
+                .reviewElement("Document properties")
                 .fixedSize(horizontal: false, vertical: true)
                 .onGeometryChange(for: CGFloat.self, of: { $0.size.height }) { [weak self] height in
                     self?.cardHeightChanged(height)

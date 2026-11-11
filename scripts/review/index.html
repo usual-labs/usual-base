@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Usual Base · Live review</title>
+  <link rel="stylesheet" href="review.css">
+  <script src="review.js" defer></script>
+</head>
+<body>
+  <header>
+    <div><strong>Usual Base</strong><span class="subtle">Live review</span></div>
+    <div class="actions">
+      <span id="status" role="status">Connecting…</span>
+      <button id="live" type="button" aria-pressed="true">Pause</button>
+      <button id="refresh" type="button">Refresh once</button>
+    </div>
+  </header>
+  <p class="instructions">Use the native sample app to navigate. Select an element here to pause the preview,
+    then use the browser’s comment tool. Resume when you’re ready.</p>
+  <p id="warning" role="alert" hidden></p>
+  <main>
+    <section class="preview" aria-label="Native window preview">
+      <div id="stage"><img id="frame" alt="Waiting for the Usual Base window" draggable="false"><div id="targets"></div></div>
+      <p id="empty">Waiting for the sample app…</p>
+    </section>
+    <aside aria-label="Native elements">
+      <h1>Elements <span id="count"></span></h1>
+      <label for="filter">Filter elements</label>
+      <input id="filter" type="search" placeholder="Name or native class" autocomplete="off">
+      <div id="selection" aria-live="polite">Select the window or an element in the list.</div>
+      <nav id="tree" aria-label="Native view hierarchy"></nav>
+    </aside>
+  </main>
+</body>
+</html>

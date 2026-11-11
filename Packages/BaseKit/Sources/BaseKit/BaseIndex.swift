@@ -1,19 +1,25 @@
 import Foundation
 
-/// The Markdown files in a Base, as relative paths with `/` separators.
+/// The files in a Base, as relative paths with `/` separators.
 public enum BaseIndex {
     public static let markdownExtensions: Set<String> = ["md", "markdown"]
+
+    /// Whether the app opens this file itself; other files open in their own app.
+    public static func isMarkdown(_ path: String) -> Bool {
+        markdownExtensions.contains((path as NSString).pathExtension.lowercased())
+    }
     /// Folders never worth showing in a knowledge base: dependency trees and build output.
     static let skippedFolders: Set<String> = ["node_modules", "DerivedData", ".build"]
 
-    /// Every Markdown file under `root`, skipping hidden files and folders, sorted the way Finder sorts.
+    /// Every file under `root`, skipping hidden files and folders, sorted the way Finder sorts. A package, such as
+    /// a Pages document, counts as one file.
     public static func scan(_ root: URL) -> [String] {
         let rootPath = root.standardizedFileURL.path(percentEncoded: false)
         let prefix = rootPath.hasSuffix("/") ? rootPath : rootPath + "/"
         guard
             let enumerator = FileManager.default.enumerator(
                 at: root,
-                includingPropertiesForKeys: [.isDirectoryKey],
+                includingPropertiesForKeys: [.isDirectoryKey, .isPackageKey],
                 options: [.skipsHiddenFiles, .skipsPackageDescendants]
             )
         else { return [] }
@@ -23,7 +29,8 @@ public enum BaseIndex {
                 enumerator.skipDescendants()
                 continue
             }
-            guard markdownExtensions.contains(url.pathExtension.lowercased()) else { continue }
+            let values = try? url.resourceValues(forKeys: [.isDirectoryKey, .isPackageKey])
+            if values?.isDirectory == true, values?.isPackage != true { continue }
             let path = url.standardizedFileURL.path(percentEncoded: false)
             guard path.hasPrefix(prefix) else { continue }
             paths.append(String(path.dropFirst(prefix.count)))
@@ -79,8 +86,8 @@ public final class FileNode: @unchecked Sendable {
         self.isFolder = isFolder
     }
 
-    /// The folders and files for a list of relative file paths. Only folders that hold Markdown
-    /// files appear. Folders come before files; both sort the way Finder sorts.
+    /// The folders and files for a list of relative file paths. Only folders that hold files
+    /// appear. Folders come before files; both sort the way Finder sorts.
     public static func tree(from paths: [String]) -> FileNode {
         let root = FileNode(name: "", path: "", isFolder: true)
         var folders: [String: FileNode] = ["": root]

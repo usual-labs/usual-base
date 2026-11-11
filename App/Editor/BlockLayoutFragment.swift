@@ -1,4 +1,5 @@
 import AppKit
+import BaseKit
 
 /// Draws the full-width background behind code blocks and the bar beside quotes. TextKit 2
 /// creates one fragment per paragraph (line), so adjacent code lines join into one block.
@@ -46,6 +47,6 @@ final class BlockLayoutFragment: NSTextLayoutFragment {
 
 /// Colours the fragment reads while drawing, which can happen off the main actor.
 enum EditorColors {
-    static var codeBackground: NSColor { .quaternarySystemFill }
-    static var quoteBar: NSColor { .tertiaryLabelColor }
+    static var codeBackground: NSColor { MarkdownColors.codeBackground }
+    static var quoteBar: NSColor { MarkdownColors.syntax }
 }

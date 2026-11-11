@@ -27,6 +27,12 @@ final class SyncController {
 
     /// Runs before each sync, so the open document's edits are on disk.
     @ObservationIgnored var willSync: () -> Void = {}
+    /// Credentials for a remote with none of its own in the keychain: the account's token for hosted Bases.
+    @ObservationIgnored var fallbackCredentials: (String) -> GitCredentials? = { _ in nil }
+    /// The open Base's synced remote, or nil: told on opening, connecting and stopping.
+    @ObservationIgnored var didChangeRemote: (String?) -> Void = { _ in }
+    /// While the Base's live updates are connected, pushes announce themselves and nothing polls.
+    @ObservationIgnored var hasLiveUpdates = false
     @ObservationIgnored var didFindConflicts: ([SyncReport.Conflict]) -> Void = { _ in }
 
     @ObservationIgnored private var engine: SyncEngine?
@@ -63,10 +69,12 @@ final class SyncController {
             remoteURL = state.remoteURL
             repositoryIdentity = state.identity
             if state.isEnabled { start() }
+            didChangeRemote(state.isEnabled ? state.remoteURL : nil)
         }
     }
 
     func close() {
+        if engine != nil { didChangeRemote(nil) }
         engine = nil
         stopTimers()
         status = .off
@@ -77,7 +85,7 @@ final class SyncController {
     }
 
     private func start() {
-        credentials = remoteURL.flatMap(CredentialStore.credentials(for:))
+        credentials = remoteURL.flatMap(credentials(for:))
         startPolling()
         request(fetch: true)
     }
@@ -88,7 +96,7 @@ final class SyncController {
             while !Task.isCancelled {
                 try? await Task.sleep(for: Self.pollInterval)
                 guard !Task.isCancelled else { return }
-                if isAutomatic { request(fetch: true) }
+                if isAutomatic && !hasLiveUpdates { request(fetch: true) }
             }
         }
     }
@@ -114,8 +122,32 @@ final class SyncController {
     }
 
     func appBecameActive() {
-        guard isAutomatic, Date.now.timeIntervalSince(lastFetch) > 20 else { return }
+        guard isAutomatic, !hasLiveUpdates, Date.now.timeIntervalSince(lastFetch) > 20 else { return }
         request(fetch: true)
+    }
+
+    /// Someone pushed to the Base (a live update): fetch it.
+    func remoteChanged() {
+        guard isAutomatic else { return }
+        request(fetch: true)
+    }
+
+    /// Picks up credentials that changed, such as after signing in, and syncs with them.
+    func reloadCredentials() {
+        guard let remoteURL, engine != nil else { return }
+        credentials = credentials(for: remoteURL)
+        if status == .needsCredentials { status = .syncing }
+        if isAutomatic || status == .syncing { request(fetch: true) }
+    }
+
+    private func credentials(for url: String) -> GitCredentials? {
+        CredentialStore.credentials(for: url) ?? fallbackCredentials(url)
+    }
+
+    /// The commits that changed `path` in the open Base, or nil when it isn't a git repository.
+    func history(of path: String) async throws -> [FileChange]? {
+        guard let engine else { return nil }
+        return try await engine.history(of: path)
     }
 
     func syncNow() {
@@ -206,7 +238,7 @@ final class SyncController {
         guard let engine else { return "Open a Base first." }
         await running?.value
         stopTimers()
-        let credentials = newCredentials ?? CredentialStore.credentials(for: address.url)
+        let credentials = newCredentials ?? credentials(for: address.url)
         do {
             if let newCredentials { try CredentialStore.save(newCredentials, for: address.url) }
             Self.saveIdentity(identity)
@@ -222,6 +254,7 @@ final class SyncController {
             let report = try await engine.sync(as: identity, credentials: credentials, fetch: true)
             finish(.success(report), fetched: true)
             startPolling()
+            didChangeRemote(address.url)
             return nil
         } catch SyncError.authenticationFailed {
             status = .needsCredentials
@@ -245,5 +278,6 @@ final class SyncController {
         stopTimers()
         credentials = nil
         status = .off
+        didChangeRemote(nil)
     }
 }

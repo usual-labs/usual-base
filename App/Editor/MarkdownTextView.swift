@@ -10,8 +10,30 @@ final class MarkdownTextView: DocumentTextView {
     var onOpenLink: ((String) -> Void)?
     private lazy var formattingBar = FormattingBar { [weak self] in self?.format($0) }
     private var formattingBarUpdateIsQueued = false
+    private var cursorIsOverBar = false
 
     // MARK: - Clicks
+
+    // Over the formatting bar, its cursor instead of the I-beam; back on the text, the I-beam again, since the
+    // text view only resets it on entering.
+    override func mouseMoved(with event: NSEvent) {
+        if let cursor = formattingBar.cursor(at: event.locationInWindow) {
+            cursor.set()
+            cursorIsOverBar = true
+        } else {
+            if cursorIsOverBar { NSCursor.iBeam.set() }
+            cursorIsOverBar = false
+            super.mouseMoved(with: event)
+        }
+    }
+
+    override func cursorUpdate(with event: NSEvent) {
+        if let cursor = formattingBar.cursor(at: event.locationInWindow) {
+            cursor.set()
+        } else {
+            super.cursorUpdate(with: event)
+        }
+    }
 
     override func mouseDown(with event: NSEvent) {
         let point = convert(event.locationInWindow, from: nil)

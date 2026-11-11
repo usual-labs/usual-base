@@ -124,7 +124,7 @@ import Testing
         let rendered = render("> quoted *text*\n\nplain")
         #expect(rendered.string == "quoted text\nplain\n")
         #expect(paragraphStyle(of: "quoted", in: rendered)?.textBlocks.count == 2)
-        #expect(attributes(of: "quoted", in: rendered)[.foregroundColor] as? NSColor == .secondaryLabelColor)
+        #expect(attributes(of: "quoted", in: rendered)[.foregroundColor] as? NSColor == MarkdownColors.secondary)
         #expect(attributes(of: "plain", in: rendered)[.foregroundColor] as? NSColor == .labelColor)
     }
 

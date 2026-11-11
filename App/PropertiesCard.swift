@@ -20,7 +20,7 @@ struct PropertiesCard: View {
             } else {
                 header
                 if let problem = frontMatter.problem {
-                    Label(problem, systemImage: "exclamationmark.triangle")
+                    Label(problem, image: "lucide.triangle-alert")
                         .foregroundStyle(.orange)
                 }
                 properties
@@ -97,7 +97,7 @@ struct PropertiesCard: View {
         case .link(let url):
             Link(url.absoluteString, destination: url)
         case .flag(let flag):
-            Label(flag ? "Yes" : "No", systemImage: flag ? "checkmark.circle.fill" : "circle")
+            Label(flag ? "Yes" : "No", image: flag ? "lucide.circle-check" : "lucide.circle")
         }
     }
 

@@ -16,9 +16,12 @@ service, [base.usual.dev](https://base.usual.dev), is optional and invitation-on
 ## What it does
 
 - **Window:** frosted glass. The desktop and windows behind it show through, blurred, even when the app isn't in
-  front. Turning on Reduce Transparency in System Settings › Accessibility › Display makes it opaque.
+  front. The file tree on the left and the History pane on the right sit on the glass, with the document on a
+  glass card between them. Drag the gaps beside the card to resize the panes; the toolbar buttons (or ⌃⌘S and ⌃⌘H)
+  show and hide them. Turning on Reduce Transparency in System Settings › Accessibility › Display makes the glass
+  opaque.
 - **Sidebar:** the folders and Markdown files in the Base. Hidden folders, `node_modules`, `.build` and
-  `DerivedData` are left out. ⌘P finds a file by name.
+  `DerivedData` are left out. ⌘P finds a file by name; ⌃⌘S shows or hides the sidebar.
 - **Editor:** Apple's text view on TextKit 2, editing the Markdown source. Headings, emphasis, code, quotes, lists,
   tasks, links and tables are styled, and their syntax characters are dimmed.
 - **Editing helpers:**
@@ -31,7 +34,10 @@ service, [base.usual.dev](https://base.usual.dev), is optional and invitation-on
   - Pasting a URL over a selection makes a link.
   - Clicking `[ ]` toggles a task.
   - ⌘-click opens a link; links to other Markdown files in the Base open in the app.
-- **View and Edit (⌘E):** a switch in the toolbar. View shows the file rendered: no Markdown syntax, real tables,
+- **File menu:** the file's name in the toolbar opens a menu to rename, duplicate, show in Finder, copy the path or
+  move the file to the Trash. Renaming doesn't change links to the old name in other notes.
+- **History:** for the open file, who changed it and when, newest first, from the Base's git history.
+- **View and Edit (⌘E):** one toolbar button switches: a pencil to edit, an eye to view. View shows the file rendered: no Markdown syntax, real tables,
   task boxes, code and quote blocks, rules, and pictures from the Base. A click opens a link, and text can be
   selected, copied and found with ⌘F. Edit shows the Markdown source. The app remembers which one you used last and
   opens in View the first time.
@@ -89,6 +95,12 @@ something is out of date and offer to update.
 
 - **Dashboard:** sign in to see your Bases, who last changed each one, and every machine, app and sandbox you
   connected, each with its own token you can revoke (agents on one machine share its connection).
+- **Mac app:** with no Base open, the window offers **Create a Base** and **Connect a Base to a folder** (File ›
+  New Base… and Connect a Base to a Folder… do the same any time). A short wizard signs this Mac in if needed (you
+  approve it in the browser), asks for a name or which Base, then where its folder goes: your Bases folder (chosen
+  once, for example `~/Usual Base`), a new folder inside a project, whose git then ignores it, or any folder. It
+  changes nothing until you confirm. The menu at the top of the sidebar lists your Bases and opens them from the
+  Bases folder. A hosted Base updates the moment anyone pushes, without polling.
 - **Agents:** the dashboard's Connect an agent page gives you a prompt to paste. The agent installs the `usual-base`
   CLI and runs `usual-base connect`; you approve it and choose which Bases it may read or write. Cloud sandboxes
   that start fresh each time use a token from the dashboard instead.
@@ -151,7 +163,7 @@ token where you can, so you can revoke one without the others.
 Open `UsualBase.xcodeproj` and run the `UsualBase` scheme. Without a `Config/Local.xcconfig`, builds are signed to
 run on this Mac only. To sign with your team, copy `Config/Local.xcconfig.example` to `Config/Local.xcconfig`.
 
-Checks (formatting, tests and an unsigned build):
+Checks (formatting, BaseKit and review-server tests, and an unsigned build):
 
 ```sh
 scripts/check.sh          # everything
@@ -164,6 +176,26 @@ GitHub over HTTPS and only run when asked:
 ```sh
 USUALBASE_NETWORK_TESTS=1 swift test --package-path Packages/BaseKit --filter GitNetworkTests
 ```
+
+`GitRemoteTests` sync through a remote that needs a token, such as a private GitHub repository or a Cloudflare
+Artifacts repository. Use a scratch repository; the tests push files with unique names to its default branch.
+`USUALBASE_TEST_READ_TOKEN`, a read-only token for the same remote, adds a refused-push test:
+
+```sh
+USUALBASE_TEST_REMOTE=https://… USUALBASE_TEST_TOKEN=… swift test --package-path Packages/BaseKit --filter GitRemoteTests
+```
+
+The app's icons are [Lucide](https://lucide.dev) icons turned into SF Symbols templates, so they follow the text's
+size and weight like Apple's. To add one, take its SVG from the `lucide-static` npm package and convert it with
+[SwiftDraw](https://github.com/swhitty/SwiftDraw) (`brew install swiftdraw`), keeping the same insets so all icons
+share one scale:
+
+```bash
+swiftdraw <name>.svg --format sfsymbol --insets 2,2,2,2 --ultralight-stroke-width 50% --output lucide.<name>.svg
+```
+
+Put it in `App/Assets.xcassets/Lucide/lucide.<name>.symbolset/` with a `Contents.json` like the others, and use it as
+`Image("lucide.<name>")` or `Label(..., image: "lucide.<name>")`. Menus and system dialogs keep Apple's own icons.
 
 libgit2 is compiled from source as part of BaseKit; no Homebrew or CMake is needed. To move to another libgit2
 release, run `scripts/vendor-libgit2.sh <tag>` and check the defines in `Packages/BaseKit/Package.swift` against
@@ -182,6 +214,41 @@ These environment variables work in Debug builds only:
 | `USUALBASE_SNAPSHOT_DELAY` | Seconds to wait before the snapshot. |
 | `USUALBASE_SNAPSHOT_SIZE=1100x1300` | Window size for the snapshot. |
 | `USUALBASE_SELECT=some text` | Selects the first match in the editor before the snapshot, which shows the formatting bar. Needs `USUALBASE_MODE=edit`. |
+| `USUALBASE_SERVER=http://localhost:8799` | Uses that Usual Base server instead of base.usual.dev, such as `npm run dev` in `cloud/`. |
+| `USUALBASE_TOKEN=ubt_…` | Starts signed in with that token, for a local server (`USUALBASE_SERVER`); make one with the CLI's `connect` against it. |
+| `USUALBASE_SETUP=create` or `connect` | Opens the Base wizard instead of the last Base; `:name`, `:pick`, `:place` or `:review` opens it at that step, and `:run` runs it to the end. `welcome` shows the card with no Base open. Later steps use `USUALBASE_SETUP_BASE` (a Base's name), and `USUALBASE_SETUP_PROJECT` or `USUALBASE_SETUP_FOLDER` for where it goes, inside the app's container. |
+| `USUALBASE_REVIEW=/absolute/path` | Writes a live window capture and native view frames to `snapshot.json` in that directory. Use the review launcher below, which creates a private temporary directory and sample Base. |
+
+### Live browser review
+
+```sh
+scripts/review.sh
+```
+
+Open the printed local URL in Codex's in-app browser. The page follows the running native window about once
+a second and overlays selectable elements. Click an element or its entry in the hierarchy to pause the frame;
+use the browser's comment tool to annotate it. Each overlay carries the native class, hierarchy and frame.
+**Resume live** follows subsequent changes; **Refresh once** updates a paused preview.
+
+Navigate, scroll and edit in the native sample window. This first version does not forward browser input to
+the app. It exposes the AppKit view hierarchy, not SwiftUI's private view graph; Debug-only markers name the
+mode switch, Quick Open, sync and properties card. A document's text is one native element, not one per paragraph.
+Comment delivery is provided by Codex Browser and still needs a human acceptance check.
+
+The launcher needs Python 3 (standard library only), builds a separate `dev.usualbase.review.UsualBase` app with
+the sandbox disabled for this local run, and opens disposable notes with no git remote. It uses a random URL on
+`127.0.0.1`, checks the HTTP host and origin, and exposes only the viewer assets and capture. Captures are
+restricted to this app process. Temporary captures and notes are private to your user; **Ctrl-C** asks only the
+review app to quit normally and removes them. Do not use the sample Base for notes you want to keep.
+
+Normal launches do not capture anything. Capture code is compiled out of Release. No new entitlements, packages,
+environment variables or deployment steps are needed for ordinary builds; the launcher supplies its Debug
+variables. If exact window capture fails, the page labels the fallback as approximate because glass and focus
+effects may be missing. A stopped or minimized app becomes stale and disables the live overlay.
+
+The approach was informed by [AppKit Inspector](https://github.com/JaminZhou/AppKitInspector) and
+[Build macOS Apps + Browser Mirror](https://github.com/MarcoRossini96/build-macos-apps-browser-mirror).
+This implementation uses Apple's AppKit and ScreenCaptureKit APIs directly, with no dependency on either project.
 
 ## Layout
 
@@ -198,6 +265,9 @@ These environment variables work in Debug builds only:
   - saving with conflict copies
   - git sync (`Sources/BaseKit/Git/`), on libgit2 from `Vendor/libgit2` and a small C shim (`Sources/CGitShim`)
 - `App/Sync/`: the sync controller, its background engine, keychain storage and the sync UI.
+- `App/Account/`: signing in to hosted Usual Base, the sidebar's Base menu, clones of hosted Bases and their live
+  updates.
+- `App/Setup/`: the welcome card with no Base open, and the wizard that creates a Base or connects one to a folder.
 - `cloud/`: the Usual Base server, for Cloudflare (base.usual.dev) or Node and Docker ([its README](cloud/README.md)).
 - `cli/`: the `usual-base` CLI for agents, `usual-base.mjs` and its modules in `lib/`, with no dependencies (Node.js
   18+ and git). The server serves it bundled into one file.
@@ -216,6 +286,9 @@ These environment variables work in Debug builds only:
   SHA-1 collision detection (MIT) are covered in that folder's `COPYING`.
 - The hosted dashboard's fonts, in `cloud/assets/fonts/`: [Figtree](https://github.com/erikdkennedy/figtree) and
   Prociono by Barry Schwartz, both SIL Open Font License 1.1, each license beside its font.
+
+- [Lucide](https://lucide.dev) 1.70.0 icons, as symbols in `App/Assets.xcassets/Lucide`: ISC, with some icons
+  derived from Feather (MIT); both notices are in `App/Lucide-LICENSE.txt`, which ships in the app.
 
 ## License
 

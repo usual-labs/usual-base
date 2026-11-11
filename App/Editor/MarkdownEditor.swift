@@ -110,6 +110,13 @@ final class EditorCoordinator: NSObject, NSTextViewDelegate, BodySource {
         return true
     }
 
+    /// Spelling marks only in prose: file names, paths and code aren't words.
+    func textView(_ textView: NSTextView, shouldSetSpellingState value: Int, range: NSRange) -> Int {
+        guard value != 0, let storage = textView.textStorage, range.length > 0, NSMaxRange(range) <= storage.length
+        else { return value }
+        return EditorTheme.isProse(at: range.location, in: storage) ? value : 0
+    }
+
     func textViewWritingToolsDidEnd(_ textView: NSTextView) {
         scheduleStyle()
     }

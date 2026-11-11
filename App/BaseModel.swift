@@ -10,7 +10,12 @@ final class BaseModel {
     private(set) var tree = FileNode.tree(from: [])
     private(set) var document: OpenDocument?
     let sync = SyncController()
+    let sidebar = SidebarSettings()
+    /// The hosted Usual Base account, whose Bases open from the sidebar's menu.
+    let account = AccountModel()
     var isQuickOpenShown = false
+    /// The wizard that makes a Base or puts one in a folder, shown in the card while it runs (`App/Setup/`).
+    var setup: SetupFlow?
     /// View shows the open file rendered; Edit shows its Markdown source. The choice is remembered.
     var mode = Mode(rawValue: UserDefaults.standard.string(forKey: BaseModel.modeKey) ?? "") ?? .view {
         didSet {
@@ -26,6 +31,8 @@ final class BaseModel {
     @ObservationIgnored private var rescanTask: Task<Void, Never>?
     @ObservationIgnored private var rescanDelay: Task<Void, Never>?
     @ObservationIgnored private var accessedRoot: URL?
+    /// The open hosted Base's live updates (`HostedBases.swift`).
+    @ObservationIgnored var live: LiveUpdates?
     private static let bookmarkKey = "lastBaseBookmark"
     private static let modeKey = "documentMode"
 
@@ -33,11 +40,22 @@ final class BaseModel {
         case view, edit
     }
 
+    func toggleMode() {
+        mode = mode == .view ? .edit : .view
+    }
+
     var name: String? { root?.lastPathComponent }
 
     init() {
         sync.willSync = { [weak self] in self?.document?.saveNow() }
         sync.didFindConflicts = { [weak self] conflicts in self?.showConflicts(conflicts) }
+        sync.fallbackCredentials = { [account] url in account.credentials(for: url) }
+        sync.didChangeRemote = { [weak self] url in self?.remoteChanged(url) }
+        account.didSignIn = { [weak self] in
+            guard let self else { return }
+            sync.reloadCredentials()
+            remoteChanged(sync.remoteURL)
+        }
     }
 
     // MARK: - Choosing a Base
@@ -61,6 +79,10 @@ final class BaseModel {
             // folder inside the app's container, such as ~/Library/Containers/<bundle id>/Data/…
             let environment = ProcessInfo.processInfo.environment
             if let mode = environment["USUALBASE_MODE"].flatMap(Mode.init) { self.mode = mode }
+            if let value = environment["USUALBASE_SETUP"] {
+                Task { await startDebugSetup(value) }
+                return
+            }
             if let path = environment["USUALBASE_OPEN"] {
                 open(URL(filePath: path), file: environment["USUALBASE_FILE"])
                 return
@@ -80,18 +102,19 @@ final class BaseModel {
         open(url)
     }
 
-    private func rememberBookmark(for url: URL) {
+    func rememberBookmark(for url: URL) {
         let data = try? url.bookmarkData(
             options: .withSecurityScope, includingResourceValuesForKeys: nil, relativeTo: nil)
         UserDefaults.standard.set(data, forKey: Self.bookmarkKey)
     }
 
-    private func open(_ url: URL, file: String? = nil) {
+    func open(_ url: URL, file: String? = nil) {
         document?.saveNow()
         document = nil
         accessedRoot?.stopAccessingSecurityScopedResource()
         accessedRoot = url.startAccessingSecurityScopedResource() ? url : nil
         root = url
+        sidebar.load(for: url)
         paths = []
         tree = FileNode.tree(from: [])
         watcher = FolderWatcher(folder: url) { [weak self] changed in
@@ -129,12 +152,9 @@ final class BaseModel {
         if changed.contains(where: { !$0.split(separator: "/").contains(".git") }) {
             sync.filesChanged()
         }
-        // Rescan only for Markdown files and folders; hidden paths (like .git) never show.
+        // Hidden paths (like .git) never show, so their changes need no rescan.
         let relevant = changed.contains { path in
-            let url = URL(filePath: path)
-            let hidden = url.pathComponents.contains { $0.hasPrefix(".") && $0.count > 1 }
-            let ext = url.pathExtension.lowercased()
-            return !hidden && (ext.isEmpty || BaseIndex.markdownExtensions.contains(ext))
+            !URL(filePath: path).pathComponents.contains { $0.hasPrefix(".") && $0.count > 1 }
         }
         guard relevant else { return }
         rescanDelay?.cancel()
@@ -145,8 +165,13 @@ final class BaseModel {
         }
     }
 
+    /// Opens a Markdown file here; any other file opens in its own app.
     func openFile(_ relativePath: String) {
         guard let root, document?.relativePath != relativePath else { return }
+        guard BaseIndex.isMarkdown(relativePath) else {
+            NSWorkspace.shared.open(root.appending(path: relativePath))
+            return
+        }
         document?.saveNow()
         do {
             document = try OpenDocument(root: root, relativePath: relativePath)
@@ -156,6 +181,67 @@ final class BaseModel {
         } catch {
             problem = "Couldn’t open “\(relativePath)”: \(error.localizedDescription)"
         }
+    }
+
+    // MARK: - The open file's menu
+
+    /// Renames the open file in its folder and keeps it open. Returns what went wrong, or nil.
+    func renameDocument(to name: String) -> String? {
+        guard let root, let document else { return nil }
+        guard let path = FileNames.renaming(document.relativePath, to: name) else {
+            return "A name can’t be empty, start with a dot, or contain “/” or “:”."
+        }
+        guard path != document.relativePath else { return nil }
+        let target = root.appending(path: path)
+        // A change of case alone is the same file to a case-insensitive disk.
+        if path.lowercased() != document.relativePath.lowercased(),
+            FileManager.default.fileExists(atPath: target.path(percentEncoded: false))
+        {
+            return "There’s already a file called “\(target.lastPathComponent)” in this folder."
+        }
+        document.saveNow()
+        do {
+            try FileManager.default.moveItem(at: document.url, to: target)
+        } catch {
+            return "Couldn’t rename “\(document.name)”: \(error.localizedDescription)"
+        }
+        sidebar.pathMoved(from: document.relativePath, to: path)
+        self.document = nil
+        openFile(path)
+        rescan()
+        return nil
+    }
+
+    /// Copies the open file next to it, as "Name copy.md", and opens the copy.
+    func duplicateDocument() {
+        guard let root, let document else { return }
+        document.saveNow()
+        let path = FileNames.copy(of: document.relativePath) {
+            FileManager.default.fileExists(atPath: root.appending(path: $0).path(percentEncoded: false))
+        }
+        do {
+            try FileManager.default.copyItem(at: document.url, to: root.appending(path: path))
+        } catch {
+            problem = "Couldn’t duplicate “\(document.name)”: \(error.localizedDescription)"
+            return
+        }
+        rescan { [weak self] in self?.openFile(path) }
+    }
+
+    /// Moves the open file to the Trash, where it can be put back from.
+    func trashDocument() {
+        guard let document else { return }
+        document.saveNow()
+        do {
+            try FileManager.default.trashItem(at: document.url, resultingItemURL: nil)
+        } catch {
+            problem = "Couldn’t move “\(document.name)” to the Trash: \(error.localizedDescription)"
+            return
+        }
+        sidebar.pathRemoved(document.relativePath)
+        self.document = nil
+        UserDefaults.standard.removeObject(forKey: lastFileKey)
+        rescan()
     }
 
     /// A sync kept the remote's version of the open file: say where this Mac's version went.

@@ -14,6 +14,8 @@ struct UsualBaseApp: App {
                 .containerBackground(for: .window) { WindowGlass() }
         }
         .defaultSize(width: 1180, height: 820)
+        // The shorter toolbar: the header holds only flat icons and the file's name.
+        .windowToolbarStyle(.unifiedCompact)
         .commands { BaseCommands(base: appDelegate.base) }
     }
 }
@@ -21,10 +23,14 @@ struct UsualBaseApp: App {
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     let base = BaseModel()
+    #if DEBUG
+        private var review: DebugReview?
+    #endif
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         #if DEBUG
             DebugSnapshot.scheduleIfRequested()
+            review = DebugReview.startIfRequested()
         #endif
         NotificationCenter.default.addObserver(
             forName: NSApplication.didResignActiveNotification,
@@ -45,6 +51,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }
 
     func applicationWillTerminate(_ notification: Notification) {
+        #if DEBUG
+            review?.stop()
+        #endif
         base.document?.saveNow()
     }
 }
@@ -54,8 +63,18 @@ struct BaseCommands: Commands {
 
     var body: some Commands {
         CommandGroup(replacing: .newItem) {
+            Button("New Base…") { base.startSetup(.create) }
+                .keyboardShortcut("n")
+            Button("Connect a Base to a Folder…") { base.startSetup(.connect) }
             Button("Open Base…") { base.chooseBase() }
                 .keyboardShortcut("o")
+            Divider()
+            if base.account.state == .signedIn {
+                Button("Sign Out of Usual Base") { base.account.signOut() }
+            } else {
+                Button("Sign In to Usual Base…") { base.account.signIn() }
+                    .disabled(base.account.state != .signedOut)
+            }
             Button("Quick Open…") { base.isQuickOpenShown = true }
                 .keyboardShortcut("p")
                 .disabled(base.root == nil)
@@ -89,11 +108,9 @@ struct BaseCommands: Commands {
             formatButton(.quote)
         }
         CommandGroup(after: .toolbar) {
-            Button(base.mode == .view ? "Edit Markdown" : "View Rendered") {
-                base.mode = base.mode == .view ? .edit : .view
-            }
-            .keyboardShortcut("e")
-            .disabled(base.document == nil)
+            Button(base.mode == .view ? "Edit Markdown" : "View Rendered") { base.toggleMode() }
+                .keyboardShortcut("e")
+                .disabled(base.document == nil)
         }
     }
 

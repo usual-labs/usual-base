@@ -34,7 +34,7 @@ extension Renderer {
                 cell.setWidth(5, type: .absoluteValueType, for: .padding)
                 cell.setWidth(Self.cellSidePadding, type: .absoluteValueType, for: .padding, edge: .minX)
                 cell.setWidth(Self.cellSidePadding, type: .absoluteValueType, for: .padding, edge: .maxX)
-                if row == 0 { cell.backgroundColor = .quaternarySystemFill }
+                if row == 0 { cell.backgroundColor = MarkdownColors.codeBackground }
                 var inner = context
                 inner.blocks.append(cell)
                 inner.indent = 0

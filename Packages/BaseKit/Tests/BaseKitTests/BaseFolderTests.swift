@@ -15,7 +15,7 @@ import Testing
         return root
     }
 
-    @Test func scanFindsMarkdownAndSkipsHiddenAndDependencyFolders() throws {
+    @Test func scanFindsEveryFileAndSkipsHiddenAndDependencyFolders() throws {
         let root = try makeFolder([
             "README.md": "",
             "docs/agents/02-map.md": "",
@@ -26,7 +26,17 @@ import Testing
             ".hidden.md": "",
         ])
         defer { try? FileManager.default.removeItem(at: root) }
-        #expect(BaseIndex.scan(root) == ["docs/agents/02-map.md", "docs/agents/10-later.markdown", "README.md"])
+        #expect(
+            BaseIndex.scan(root) == [
+                "docs/agents/02-map.md", "docs/agents/10-later.markdown", "docs/image.png", "README.md",
+            ])
+    }
+
+    @Test func onlyMarkdownOpensInTheApp() {
+        #expect(BaseIndex.isMarkdown("Notes/Plan.md"))
+        #expect(BaseIndex.isMarkdown("Plan.MARKDOWN"))
+        #expect(!BaseIndex.isMarkdown("Tax/2025.pdf"))
+        #expect(!BaseIndex.isMarkdown("README"))
     }
 
     @Test func rankPrefersFileNamesAndWordStarts() {
