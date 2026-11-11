@@ -211,6 +211,8 @@ These environment variables work in Debug builds only:
 - [libgit2](https://github.com/libgit2/libgit2) 1.9.7, vendored in `Packages/BaseKit/Vendor/libgit2`: GPL 2.0 with a
   linking exception, which allows linking it into any program. Its bundled llhttp (MIT), xdiff (LGPL 2.1) and
   SHA-1 collision detection (MIT) are covered in that folder's `COPYING`.
+- The hosted dashboard's fonts, in `cloud/assets/fonts/`: [Figtree](https://github.com/erikdkennedy/figtree) and
+  Prociono by Barry Schwartz, both SIL Open Font License 1.1, each license beside its font.
 
 ## License
 

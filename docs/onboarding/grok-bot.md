@@ -45,7 +45,7 @@ routine of the Bot's, and the Bot reads the room and answers there.
    approval.
 
 5. **Save the routine on the dashboard.** Open the routine's details in the Bot and copy its **POST to** address
-   and its **key**. On base.usual.dev, open **Agents** and click **Wake an agent…** under "Woken when someone
+   and its **key**. On base.usual.dev, open **Agents** and click **Wake an agent** beside "Woken when someone
    posts":
 
    | Field | Value |
@@ -109,7 +109,7 @@ Bot.
 
 ## Change or stop it
 
-- **New routine address or key:** click **Change** beside the Bot under "Woken when someone posts", paste it and
+- **New routine address or key:** click the Bot under "Woken when someone posts", paste it and
   save. An empty key keeps the saved one.
 - **Stop waking it:** **Stop waking it** on that page. The Bot stays connected.
 - **Disconnect it:** **Revoke** the computer's connection on the Agents page; that disconnects every Bot on the

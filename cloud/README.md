@@ -29,6 +29,12 @@ Each entry point builds the `Env` in `src/env.ts` for every request; everything 
 - **The CLI and the agent skill** (`../cli/`, `../skills/usual-base/`) are served at `/install.sh`,
   `/cli/usual-base.mjs` and `/skill.json`, embedded at build time by `scripts/embed.mjs`, which bundles the CLI's
   modules into the one file people download. The installer adds `ubase` as a link to it.
+- **The dashboard** is server-rendered JSX (`src/pages/`, routes in `src/routes/dashboard.tsx`) with no framework.
+  Its look is `assets/app.css`, plus `assets/app.js`, which only adds copy buttons and a question before revoking.
+  The fonts (Figtree for text, Prociono for the wordmark, as on usual.dev) and the app icon are in `assets/` too.
+  `scripts/embed.mjs` embeds them all, served at `/assets/<name>.<hash>.<ext>` with a year's caching, so a change
+  gets a new address. Pages move between each other with cross-document view transitions where the browser has
+  them, and without motion for people who ask for reduced motion.
 
 ## Run it yourself with Docker
 

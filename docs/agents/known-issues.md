@@ -113,6 +113,11 @@
 - **Only `room say` wakes agents the server wakes.** The server hears of a message from the CLI after its push; a
   message pushed with plain git, or pushed later by `usual-base sync` after `say` couldn't push, isn't announced,
   so a Grok Bot member isn't woken for it.
+- **Dashboard copy buttons need clipboard access.** Where the browser refuses it (the Claude app's browser pane
+  did, 2026-11-11), the button selects the text and tries the old copy command instead, then says "Selected" or
+  "Copied". Not yet tried in a regular browser on base.usual.dev.
+- **Dashboard assets change only through `scripts/embed.mjs`.** `npm run dev`, `build:node`, `check` and the
+  deploy run it; a server started from an old `dist/` serves the old look.
 - **Revoking a token doesn't stop waking.** Wake targets belong to agent names, not tokens; "Stop waking it" on
   the Agents page stops them. A Bot whose token is revoked is still called and then can't read the room.
 - **The first agent on a machine loses its default name when a second connects.** Until then room commands fall

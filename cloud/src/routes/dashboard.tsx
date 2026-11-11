@@ -7,7 +7,7 @@ import { decide, pendingRequest } from "../connect";
 import type { AppEnv, Caller, User } from "../env";
 import { signupsAllow } from "../signups";
 import { createToken, listTokens, revokeToken } from "../tokens";
-import { SignIn, SignUp, Welcome } from "../pages/account";
+import { NotFound, SignIn, SignUp, Welcome } from "../pages/account";
 import { AgentList, ConnectAgent, TokenCreated } from "../pages/agents";
 import { BaseDetail, BaseList, NewBase } from "../pages/bases";
 import { Approve, Decided, EnterCode } from "../pages/connect";
@@ -37,6 +37,12 @@ async function requireUser(c: Context<AppEnv>): Promise<User | Response> {
 }
 
 const asCaller = (user: User): Caller => ({ user, token: null });
+
+/** What a browser gets for a page that doesn't exist (or isn't the person's); git and the API get plain text. */
+export async function notFoundPage(c: Context<AppEnv>): Promise<Response> {
+  if (!c.req.header("accept")?.includes("text/html")) return c.text("Not found", 404);
+  return c.html(<NotFound user={await signedIn(c).catch(() => null)} />, 404);
+}
 
 function redirectWithCookies(to: string, headers: Headers): Response {
   const response = new Response(null, { status: 303, headers: { location: to } });

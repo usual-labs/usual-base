@@ -16,7 +16,7 @@
   // Sign-in and sign-up attempts per IP address.
   "ratelimits": [{ "name": "AUTH_LIMIT", "namespace_id": "1001", "simple": { "limit": 10, "period": 60 } }],
   // Embeds the CLI, its installer and the agent skill from this repository (src/generated/files.ts).
-  "build": { "command": "node scripts/embed.mjs", "watch_dir": ["src", "../cli", "../skills"] },
+  "build": { "command": "node scripts/embed.mjs", "watch_dir": ["src", "assets", "../cli", "../skills"] },
   // BETTER_AUTH_SECRET is a Worker secret (wrangler secret put). For wrangler dev, see .dev.vars.example.
   // `wrangler dev --env dev`: local D1 and Durable Objects, and a separate Artifacts namespace.
   "env": {

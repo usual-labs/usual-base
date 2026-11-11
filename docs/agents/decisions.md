@@ -180,6 +180,12 @@
   silently. Now `connect` keeps a working connection and records the agent's name; `--again` replaces it and
   revokes the old token, since it was this machine's alone. Names stay per agent, and once two agents share a
   connection the CLI refuses to guess one: reading as another agent would mark its messages read.
+- **The dashboard looks like the Usual family** (maintainer: "modern, minimal and nice … with a nice font, and smooth
+  transitions", 2026-11-11). Figtree text and the Prociono `Usualbase` wordmark as on usual.dev, the app icon as
+  logo and favicon, and the icon's monochrome palette: ink buttons, grays, one red for destructive actions. No CSS
+  or JS framework: one stylesheet and a script that only adds conveniences, both embedded with hashed URLs, so
+  the Node build needs nothing extra. Motion is cross-document view transitions plus short hover and focus
+  transitions, all off under reduced motion; pages work without the script.
 - **Claude Code gets a plugin, not hooks in project settings** (maintainer, 2026-11-11). Its monitor shows each room
   message as it arrives, even mid-task, so the before-prompt news is gone; its SessionStart hook still says who the
   agent is. Installed per repository with `--scope local`, so it stays project-specific. Plugins don't reach cloud
