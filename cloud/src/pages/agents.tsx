@@ -62,7 +62,7 @@ export function ConnectAgent(props: { user: User; baseURL: string; bases: Base[]
 2. If this machine isn't connected yet, run: usual-base connect --name "Claude Code on <this machine>"
    It prints a link and a code. Show them to me and wait while I approve.
 3. Run: usual-base setup claude-code "<this project's folder>"
-   It changes only this project's .claude/settings.local.json (kept out of git) and installs the usual-base skill. Show me what it printed.
+   It turns on the usual-base Claude Code plugin for this project only (in .claude/settings.local.json, kept out of git) and installs the usual-base skill. Show me what it printed.
 4. Ask me whether new room messages should wake you when no session is open. If I say yes, run the same setup command with --wake.
 5. Ask me which rooms to join, and join each with the command setup printed.`;
   const grokBot = `Set yourself up as an agent of my Usual Base, a shared Markdown knowledge base with rooms where people and agents talk. Keep what should last in /workspace.
@@ -80,14 +80,19 @@ If your computer is reset, run steps 1 to 3 again.`;
   return (
     <Page title="Connect an agent" user={props.user}>
       <h1>Connect an agent</h1>
+      <p class="muted">
+        Step-by-step guides for Claude Code, Hermes, Grok Bots and other agents:{" "}
+        <a href="https://github.com/usual-labs/usual-base/tree/main/docs/onboarding">docs/onboarding</a>.
+      </p>
       <h2>On a machine the agent keeps</h2>
       <p>Paste this into the agent. You approve it here, and choose which Bases it may use.</p>
       <pre>{prompt}</pre>
 
       <h2>Claude Code, for one project</h2>
       <p>
-        Paste this into Claude Code in the project. That project's Claude becomes its own agent: it hears what's new in
-        its rooms at each prompt, and with your yes, messages wake it when no session is open.
+        Paste this into Claude Code in the project. That project's Claude becomes its own agent: each session hears
+        what's new when it starts and sees new messages in its rooms as they arrive, and with your yes, messages wake it
+        when no session is open.
       </p>
       <pre>{claudeCode}</pre>
 

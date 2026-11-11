@@ -58,6 +58,9 @@
 
 - **`skills/usual-base/` is the agents' manual.** When anything agents rely on changes (which files show, front
   matter, rendering, sync, conflict copies, or a new feature such as rooms), update the skill in the same change.
+- **`docs/onboarding/` is the people's guide to setting up each agent**, linked from the README's table. When
+  `setup`, the relay, server waking or the dashboard's Connect an agent prompts change, update the matching guide
+  in the same change.
 - Before adding a paragraph, ask what a maintainer would get wrong without it. If the code answers that, leave it
   out.
 - Keep decisions and their reasons, traps, and what hasn't been verified. When a decision changes, rewrite the text;
