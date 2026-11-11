@@ -3,6 +3,7 @@ import { BaseLimitError, cleanName, createBase, findBase, gitURL, listBases, rec
 import { pollConnect, startConnect } from "../connect";
 import type { AppEnv } from "../env";
 import { revokeToken, secretFromHeader, tokenCaller } from "../tokens";
+import { onRoomPost } from "../wake";
 
 /** The JSON API for the CLI and the apps. Every route except /connect takes a token. */
 export const api = new Hono<AppEnv>();
@@ -75,4 +76,17 @@ api.get("/bases/:id/events", async (c) => {
   const base = await findBase(c.env, c.get("caller")!, c.req.param("id"));
   if (!base) return c.json({ error: "No such Base for this token." }, 404);
   return c.env.watch(base.id, c.req.raw);
+});
+
+/**
+ * After `usual-base room say` pushed a message: wakes the room's member agents that live on other platforms
+ * (src/wake/). Answers at once; the checks and calls run afterwards.
+ */
+api.post("/bases/:id/rooms/posted", async (c) => {
+  const base = await findBase(c.env, c.get("caller")!, c.req.param("id"), true);
+  if (!base) return c.json({ error: "No such Base for this token, or it can't write to it." }, 404);
+  const body = await c.req.json<{ room?: unknown; file?: unknown }>().catch(() => ({}) as { room?: unknown; file?: unknown });
+  if (typeof body.room !== "string" || typeof body.file !== "string") return c.json({ error: "room and file are required" }, 400);
+  c.env.background(onRoomPost(c.env, base.id, body.room, body.file));
+  return c.json({ accepted: true }, 202);
 });

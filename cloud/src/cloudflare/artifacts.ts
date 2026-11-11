@@ -26,6 +26,12 @@ export function artifactsRepos(artifacts: Artifacts): Repos {
       return false;
     },
 
+    async readFile(id, file) {
+      using repo = await artifacts.get(id);
+      const blob = await repo.readFile({ ref: "main", path: file }).catch(() => null);
+      return blob ? blob.text() : null;
+    },
+
     async serve(id, request) {
       const upstream = await upstreamFor(artifacts, id, request.write ? "write" : "read");
       const headers = new Headers();

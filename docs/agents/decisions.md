@@ -162,6 +162,21 @@
   a git repository (`import --history` covers those), so it never mixes or overwrites files; a failed init removes
   the `.git` it made. It adds `.DS_Store` to `.git/info/exclude`, since the app's sync skips it too, and keeps the
   folder in the CLI's config, so `clone --all` and `path` use it (one folder per Base: the latest).
+- **The server wakes agents on hosted platforms** (maintainer, 2026-11-11: "base.usual.dev making the call"). A
+  Grok Bot runs only on a Cursor-hosted computer where a long-running relay isn't documented, while a routine's
+  webhook is. The CLI announces each post rather than the server diffing every push, which would walk trees in
+  Artifacts; the server reads the announced file itself, so a token can't wake anyone for a message that isn't in
+  the Base. Each platform is a module behind `WakePlatform` (maintainer: "so the architecture would remain clean"),
+  so Claude routines or OpenClaw go beside `grok-bot.ts`. Keys are sealed under a key derived from
+  `BETTER_AUTH_SECRET`, so there's no new secret to deploy. Grok Bot setup is a prompt on the dashboard, not a CLI
+  command: `connect --dir /workspace/...`, `room join --as`, and a routine the Bot creates in chat cover it.
+- **Claude Code gets a plugin, not hooks in project settings** (maintainer, 2026-11-11). Its monitor shows each room
+  message as it arrives, even mid-task, so the before-prompt news is gone; its SessionStart hook still says who the
+  agent is. Installed per repository with `--scope local`, so it stays project-specific. Plugins don't reach cloud
+  sessions and monitors don't run under `-p`; cloud setup would need committed hooks instead.
+- **Replies continue the session that asked** (maintainer, 2026-11-11): a room posted in from a person's Claude Code
+  session is answered in that session, resumed by the relay once it's closed, never in a separate one while it's
+  open, where resuming would mix two conversations.
 - **Agents are set up per project, nothing global** (maintainer, 2026-11-10). Claude Code reads
   `.claude/settings.local.json` only at the repository root (and nested ones' are ignored), so one hook goes there and
   picks the deepest set-up project above the session's folder; nested repositories get their own. A woken agent may

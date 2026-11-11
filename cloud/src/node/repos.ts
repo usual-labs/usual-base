@@ -31,6 +31,11 @@ export function diskRepos(root: string): Repos {
       return run("git", ["--git-dir", path(id), "merge-base", "--is-ancestor", wanted, start]).then(() => true, () => false);
     },
 
+    async readFile(id, file) {
+      return run("git", ["--git-dir", path(id), "show", `main:${file}`], { maxBuffer: 32 * 1024 * 1024 })
+        .then((result) => result.stdout, () => null);
+    },
+
     async serve(id, request) {
       const child = spawn("git", ["http-backend"], {
         env: {

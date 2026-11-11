@@ -29,6 +29,8 @@ export interface Repos {
   delete(id: string): Promise<void>;
   /** Whether commit `wanted` is in the history of commit `start`. */
   contains(id: string, start: string, wanted: string): Promise<boolean>;
+  /** A file's text on the main branch, or null if there's no such file. */
+  readFile(id: string, path: string): Promise<string | null>;
   /** Answers a git smart-HTTP request; `path` is what follows `<id>.git`, such as "/info/refs". */
   serve(id: string, request: GitRequest): Promise<Response>;
 }

@@ -6,11 +6,13 @@
 // hook goes into the repository root's local settings (and each nested repository's), and decides from the folder a
 // session starts in which configured project it belongs to: the deepest one above it.
 
+import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readdirSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
-import { basename, join, resolve, sep } from "node:path";
-import { cliFile, config, fail, gitTry, shown, writeConfig } from "./core.mjs";
+import { basename, dirname, join, resolve, sep } from "node:path";
+import { cliFile, config, fail, gitTry, inCheckout, shown, writeConfig } from "./core.mjs";
 import { roomsBase } from "./room-store.mjs";
+import { noteSession, noteWatching } from "./claude-sessions.mjs";
 import { roomActions } from "./rooms.mjs";
 import { linkedTo, skillFiles, writeSkill } from "./upkeep.mjs";
 
@@ -20,7 +22,6 @@ const SKIPPED = new Set(["node_modules", ".build", "DerivedData", "build", "dist
 /** The agents set up for Claude Code: { platform, path, name, base, wake, claude }. */
 export const claudeAgents = () => (config.agents || []).filter((a) => a.platform === "claude-code");
 
-const hookCommand = () => `'${process.execPath}' '${cliFile()}' ${MARK}`;
 const settingsFile = (root) => join(root, ".claude", "settings.local.json");
 const isOurs = (hook) => typeof hook?.command === "string" && hook.command.includes(MARK);
 
@@ -60,22 +61,6 @@ function writeSettings(file, settings) {
   writeFileSync(file, JSON.stringify(settings, null, 2) + "\n");
 }
 
-/** Adds the SessionStart and UserPromptSubmit hooks once, keeping everything else in the file as it was. */
-function addHooks(root) {
-  const file = settingsFile(root);
-  const settings = readSettings(file);
-  settings.hooks ??= {};
-  for (const event of ["SessionStart", "UserPromptSubmit"]) {
-    settings.hooks[event] ??= [];
-    const ours = settings.hooks[event].flatMap((group) => group.hooks || []).find(isOurs);
-    if (ours) ours.command = hookCommand(); // the CLI or Node may have moved
-    else settings.hooks[event].push({ hooks: [{ type: "command", command: hookCommand(), timeout: 30 }] });
-  }
-  writeSettings(file, settings);
-  ignoreLocally(root);
-  return file;
-}
-
 function removeHooks(root) {
   const file = settingsFile(root);
   if (!existsSync(file)) return null;
@@ -95,16 +80,6 @@ function removeHooks(root) {
   return changed ? file : null;
 }
 
-/** Keeps the local settings out of the repository, in its own exclude list, unless git already ignores them. */
-function ignoreLocally(root) {
-  if (!gitTry(["-C", root, "rev-parse", "--git-dir"]).ok) return;
-  if (gitTry(["-C", root, "check-ignore", "-q", ".claude/settings.local.json"]).ok) return;
-  const exclude = resolve(root, gitTry(["-C", root, "rev-parse", "--git-path", "info/exclude"]).stdout.trim());
-  mkdirSync(join(exclude, ".."), { recursive: true });
-  const text = existsSync(exclude) ? readFileSync(exclude, "utf8") : "";
-  writeFileSync(exclude, text + (text && !text.endsWith("\n") ? "\n" : "") + ".claude/settings.local.json\n");
-}
-
 const inside = (dir, folder) => dir === folder || dir.startsWith(folder.endsWith(sep) ? folder : folder + sep);
 
 /** `usual-base setup claude-code <folder> [--name NAME] [--base BASE] [--wake] [--remove]` */
@@ -118,10 +93,14 @@ export async function setupClaudeCode({ args, flags }) {
   if (flags.remove) {
     config.agents = (config.agents || []).filter((a) => !(a.platform === "claude-code" && a.path === path));
     writeConfig(config);
-    // A repository's hook stays while another project in it is still set up.
+    // A repository keeps the plugin while another project in it is still set up.
     const stillUsed = (root) => others.some((a) => inside(a.path, root) || inside(root, a.path));
-    const removed = roots.filter((root) => !stillUsed(root)).map(removeHooks).filter(Boolean);
-    console.log(`Removed the Claude Code setup for ${shown(path)}.${removed.length ? ` Hooks taken out of: ${removed.map(shown).join(", ")}.` : ""}`);
+    const off = roots.filter((root) => !stillUsed(root));
+    for (const root of off) {
+      removeHooks(root);
+      runClaude(["plugin", "uninstall", PLUGIN, "--scope", "local"], root);
+    }
+    console.log(`Removed the Claude Code setup for ${shown(path)}.${off.length ? ` The plugin is off in: ${off.map(shown).join(", ")}.` : ""}`);
     return;
   }
 
@@ -132,7 +111,9 @@ export async function setupClaudeCode({ args, flags }) {
   config.agents = [...(config.agents || []).filter((a) => !(a.platform === "claude-code" && a.path === path)), agent];
   writeConfig(config);
 
-  const files = roots.map(addHooks);
+  // Hooks written into local settings by earlier versions: the plugin does their job now.
+  roots.forEach(removeHooks);
+  const installed = roots.map((root) => installPlugin(root, flags));
   const skillDir = join(homedir(), ".claude", "skills", "usual-base");
   let skillNote;
   if (linkedTo(skillDir)) skillNote = `the skill in ${shown(skillDir)} is a link, so it was left alone`;
@@ -142,7 +123,9 @@ export async function setupClaudeCode({ args, flags }) {
   }
 
   console.log(`${shown(path)} is set up for Claude Code as "${name}", with the Base at ${shown(base)}.`);
-  console.log(`- Hooks in ${files.map(shown).join(", ")} (only on this machine; git ignores them): a session that starts in the project hears who it is and what's new in its rooms, and each prompt hears what's new.`);
+  const failed = installed.filter((r) => !r.ok);
+  if (failed.length) console.log(`- The Claude Code plugin isn't installed: ${failed[0].error}`);
+  else console.log(`- The usual-base Claude Code plugin is on for this project only (${installed.map((r) => shown(r.root)).join(", ")}): a session that starts here hears who it is and what's new, then sees each new message in its rooms as it arrives.`);
   console.log(`- ${skillNote[0].toUpperCase()}${skillNote.slice(1)}.`);
   const nearby = others.filter((a) => roots.some((root) => inside(a.path, root)));
   if (nearby.length) console.log(`- Also set up in this repository: ${nearby.map((a) => `"${a.name}" in ${shown(a.path)}`).join(", ")}. A session belongs to the deepest one above where it starts.`);
@@ -152,6 +135,27 @@ export async function setupClaudeCode({ args, flags }) {
     if (!claude) console.log("- Waking: `claude` isn't on the PATH here, so the relay can't start it. Install Claude Code, then run setup again.");
     else await installRelay(flags);
   } else console.log("- Waking: off. Add --wake to have new messages start Claude when no session is open.");
+}
+
+const PLUGIN = "usual-base@usual-labs";
+
+function runClaude(args, cwd) {
+  const claude = whichClaude();
+  if (!claude) return { ok: false, error: "`claude` isn't on the PATH." };
+  const result = spawnSync(claude, args, { cwd, encoding: "utf8" });
+  return { ok: result.status === 0, error: (result.stderr || result.stdout || "").trim().split("\n")[0] };
+}
+
+/**
+ * Installs the plugin for one repository only (`--scope local`, recorded in its untracked local settings). The
+ * marketplace is this repository on GitHub, or the checkout the CLI runs from, or --plugin-source.
+ */
+function installPlugin(root, flags) {
+  const source = typeof flags["plugin-source"] === "string" ? flags["plugin-source"]
+    : inCheckout() ? resolve(dirname(cliFile()), "..") : "usual-labs/usual-base";
+  const added = runClaude(["plugin", "marketplace", "add", source, "--scope", "local"], root);
+  if (!added.ok && !/already/i.test(added.error)) return { root, ...added };
+  return { root, ...runClaude(["plugin", "install", PLUGIN, "--scope", "local"], root) };
 }
 
 /** Claude Code's command on this machine, so the relay can run it with a PATH of its own. */
@@ -165,13 +169,31 @@ function whichClaude() {
 }
 
 /** `usual-base hook claude-code`: the project's hooks. Reads the hook's JSON from stdin; never fails a prompt. */
-export async function claudeCodeHook() {
+export async function claudeCodeHook(args = []) {
+  if (args[1] === "watch") {
+    // The plugin's monitor: runs in the session's folder; silent where no project is set up.
+    let here;
+    try {
+      here = realpathSync(process.cwd());
+    } catch {
+      return;
+    }
+    const agent = claudeAgents().filter((a) => inside(here, a.path)).sort((a, b) => b.path.length - a.path.length)[0];
+    if (!agent || !existsSync(agent.base)) return;
+    noteWatching(agent);
+    setInterval(() => noteWatching(agent), 60_000);
+    await roomActions.watch(agent.base, [], { as: agent.name });
+    return;
+  }
   try {
     const raw = readFileSync(0, "utf8");
     const input = raw.trim() ? JSON.parse(raw) : {};
     const start = realpathSync(input.cwd || process.cwd());
     const agent = claudeAgents().filter((a) => inside(start, a.path)).sort((a, b) => b.path.length - a.path.length)[0];
     if (!agent || !existsSync(agent.base)) return;
+    // The relay's own runs set USUAL_BASE_RELAY: they aren't a person's session.
+    if (!process.env.USUAL_BASE_RELAY) noteSession(agent, input.session_id, input.hook_event_name);
+    if (input.hook_event_name === "SessionEnd") return;
     await roomActions.news(agent.base, [], { as: agent.name, intro: input.hook_event_name === "SessionStart" });
   } catch (error) {
     console.error(`usual-base hook: ${error.message}`);

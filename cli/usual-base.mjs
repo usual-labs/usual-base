@@ -49,8 +49,11 @@ Rooms, where people and agents talk in a Base (one file per message; works with 
 Agents:
   usual-base setup claude-code <folder> [--name NAME] [--base BASE] [--wake] [--remove]
                                                  make that project's Claude Code an agent of the Base
+  usual-base setup hermes <profile>… | --all [--base BASE] [--wake] [--remove]
+                                                 make Hermes Bots agents of the Base (run where Hermes runs)
   usual-base relay [install | uninstall | status]
                                                  wake agents set up with --wake when their rooms get messages
+  A Grok Bot is woken by the server instead: see Connect an agent on ${server}.
 
 --history keeps the folder's git history, even for a subfolder of a bigger repository.
 Once a day, the commands that work with Bases check whether this CLI or a skill is out of date.

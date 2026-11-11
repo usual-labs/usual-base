@@ -125,3 +125,33 @@ export const pushes = sqliteTable("pushes", {
   newId: text("new_id").notNull(),
   at: integer("at").notNull(),
 }, (t) => [index("pushes_base").on(t.baseId, t.at)]);
+
+/**
+ * How base.usual.dev wakes an agent that lives on another platform when someone posts in a room it's a member
+ * of (src/wake/). One per agent token; the secret is encrypted with a key derived from BETTER_AUTH_SECRET.
+ */
+export const wakeTargets = sqliteTable("wake_targets", {
+  tokenId: text("token_id").primaryKey().references(() => tokens.id, { onDelete: "cascade" }),
+  userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
+  /** Which platform module delivers it, such as "grok-bot". */
+  platform: text("platform").notNull(),
+  /** The agent's name in rooms: its member file and the `from` of its messages. */
+  name: text("name").notNull(),
+  url: text("url").notNull(),
+  secret: text("secret").notNull(),
+  createdAt: integer("created_at").notNull(),
+  /** When it was woken in the last hour, for the hourly limit. */
+  recentWakes: text("recent_wakes", { mode: "json" }).$type<number[]>().notNull().default([]),
+  lastWakeAt: integer("last_wake_at"),
+  /** "ok", or what went wrong on the last try, for the dashboard. */
+  lastResult: text("last_result"),
+}, (t) => [index("wake_targets_user").on(t.userId)]);
+
+/** Room messages the CLI announced after pushing, newest last: who wrote them, for the loop brake. */
+export const roomPosts = sqliteTable("room_posts", {
+  baseId: text("base_id").notNull().references(() => bases.id, { onDelete: "cascade" }),
+  room: text("room").notNull(),
+  file: text("file").notNull(),
+  author: text("author").notNull(),
+  at: integer("at").notNull(),
+}, (t) => [primaryKey({ columns: [t.baseId, t.room, t.file] }), index("room_posts_room").on(t.baseId, t.room, t.at)]);

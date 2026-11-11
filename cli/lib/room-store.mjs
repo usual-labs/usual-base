@@ -8,7 +8,7 @@
 import { existsSync, mkdirSync, readFileSync, readdirSync, realpathSync, statSync, writeFileSync } from "node:fs";
 import { hostname } from "node:os";
 import { basename, dirname, join, relative, resolve, sep } from "node:path";
-import { basesDir, config, fail, git, gitTry, shown } from "./core.mjs";
+import { basesDir, config, fail, git, gitTry, server, shown, token } from "./core.mjs";
 import { folderName, syncRepo } from "./bases.mjs";
 
 export const ROOMS = "Rooms";
@@ -173,6 +173,41 @@ export function unread(base, room, reader, placeKey = reader) {
 // --- git -------------------------------------------------------------------------------------------
 
 export const hasRemote = (base) => gitTry(["-C", base, "remote"]).stdout.trim() !== "";
+
+/** The Base's id when this clone pushes to this CLI's server and the CLI has a token there; else null. */
+export function hostedId(base) {
+  const origin = gitTry(["-C", base, "remote", "get-url", "origin"]).stdout.trim();
+  const hosted = origin.match(/^(https?:\/\/[^/]+)\/git\/([a-z0-9][a-z0-9._-]*)\.git$/);
+  return hosted && hosted[1] === server && token() ? hosted[2] : null;
+}
+
+/** Calls `onChange` on every push to the Base: on a hosted Base's push events, or every `seconds` otherwise. */
+export function whenPushed(base, seconds, onChange) {
+  const id = hostedId(base);
+  if (!id || typeof WebSocket !== "function") {
+    setInterval(onChange, seconds * 1000);
+    return;
+  }
+  let retry = 1000;
+  const connect = () => {
+    const socket = new WebSocket(`${server.replace(/^http/, "ws")}/api/bases/${id}/events`, {
+      headers: { authorization: `Bearer ${token()}` },
+    });
+    const keepAlive = setInterval(() => socket.readyState === 1 && socket.send("ping"), 30_000);
+    socket.onopen = () => {
+      retry = 1000;
+      onChange(); // anything pushed while it was away
+    };
+    socket.onmessage = (event) => event.data !== "pong" && onChange();
+    socket.onclose = () => {
+      clearInterval(keepAlive);
+      setTimeout(connect, (retry = Math.min(retry * 2, 60_000)));
+    };
+    socket.onerror = () => {};
+  };
+  connect();
+  setInterval(onChange, 5 * 60_000); // a safety net if an event is ever missed
+}
 
 /** Brings in others' messages; offline, the room is read as this clone has it. */
 export function pull(base) {

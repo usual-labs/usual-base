@@ -11,6 +11,8 @@ import { SignIn, SignUp, Welcome } from "../pages/account";
 import { AgentList, ConnectAgent, TokenCreated } from "../pages/agents";
 import { BaseDetail, BaseList, NewBase } from "../pages/bases";
 import { Approve, Decided, EnterCode } from "../pages/connect";
+import { WakePage } from "../pages/wake";
+import { PLATFORMS, removeWakeTarget, saveWakeTarget, wakeTargetOf, wakeTargetsOf } from "../wake";
 
 export const dashboard = new Hono<AppEnv>();
 
@@ -174,7 +176,7 @@ function chosenBases(form: Record<string, string | File | (string | File)[]>) {
 dashboard.get("/agents", async (c) => {
   const user = await requireUser(c);
   if (user instanceof Response) return user;
-  return c.html(<AgentList user={user} tokens={await listTokens(c.env, user.id)} />);
+  return c.html(<AgentList user={user} tokens={await listTokens(c.env, user.id)} wakes={await wakeTargetsOf(c.env, user.id)} />);
 });
 
 dashboard.get("/agents/connect", async (c) => {
@@ -201,6 +203,46 @@ dashboard.post("/agents", async (c) => {
   });
   c.header("cache-control", "no-store");
   return c.html(<TokenCreated user={user} name={name} secret={secret} baseURL={c.env.BASE_URL} />);
+});
+
+// --- Waking an agent that lives on another platform (src/wake/) --------------------------------
+
+async function agentToken(c: Context<AppEnv>, userId: string) {
+  const token = (await listTokens(c.env, userId)).find((t) => t.id === c.req.param("id"));
+  return token?.kind === "agent" ? token : null;
+}
+
+dashboard.get("/agents/:id/wake", async (c) => {
+  const user = await requireUser(c);
+  if (user instanceof Response) return user;
+  const token = await agentToken(c, user.id);
+  if (!token) return c.notFound();
+  const target = await wakeTargetOf(c.env, user.id, token.id);
+  return c.html(<WakePage user={user} token={token} target={target} platforms={Object.values(PLATFORMS)} />);
+});
+
+dashboard.post("/agents/:id/wake", async (c) => {
+  const user = await requireUser(c);
+  if (user instanceof Response) return user;
+  const token = await agentToken(c, user.id);
+  if (!token) return c.notFound();
+  const form = await c.req.parseBody();
+  const error = await saveWakeTarget(c.env, user.id, token.id, {
+    platform: String(form.platform ?? ""), name: cleanName(form.name) ?? token.name,
+    url: String(form.url ?? "").trim(), secret: String(form.secret ?? "").trim(),
+  });
+  if (error) {
+    const target = await wakeTargetOf(c.env, user.id, token.id);
+    return c.html(<WakePage user={user} token={token} target={target} platforms={Object.values(PLATFORMS)} error={error} />, 400);
+  }
+  return c.redirect("/agents", 303);
+});
+
+dashboard.post("/agents/:id/wake/delete", async (c) => {
+  const user = await requireUser(c);
+  if (user instanceof Response) return user;
+  await removeWakeTarget(c.env, user.id, c.req.param("id"));
+  return c.redirect("/agents", 303);
 });
 
 dashboard.post("/agents/:id/revoke", async (c) => {

@@ -162,9 +162,19 @@ export function installedSkills() {
     join(home, ".claude", "skills", "usual-base"),
     join(home, ".agents", "skills", "usual-base"),
     ...(existsSync(hermes) ? readdirSync(hermes).map((category) => join(hermes, category, "usual-base")) : []),
+    ...hermesProfileSkills(join(home, ".hermes", "profiles")),
     join(home, ".usual-base", "skill"),
   ];
   return places.filter((dir) => existsSync(join(dir, "SKILL.md"))).map((dir) => ({ dir, link: linkedTo(dir) }));
+}
+
+/** Each Hermes Bot (profile) keeps its own skills: `profiles/<bot>/skills/<category>/usual-base`. */
+function hermesProfileSkills(dir) {
+  if (!existsSync(dir)) return [];
+  return readdirSync(dir).flatMap((profile) => {
+    const skills = join(dir, profile, "skills");
+    return existsSync(skills) ? readdirSync(skills).map((category) => join(skills, category, "usual-base")) : [];
+  });
 }
 
 /** The skill's files that are missing from a copy or differ from it. */

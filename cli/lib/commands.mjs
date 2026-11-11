@@ -143,16 +143,17 @@ Add these lines to your global instructions (for example ~/.claude/CLAUDE.md or 
     console.log(syncRepo(dir) === "pushed" ? "Pushed." : "Up to date.");
   },
 
-  /** Sets an agent platform up for a Base. Today: `setup claude-code <project folder>`. */
+  /** Sets an agent platform up for a Base: `setup claude-code <project folder>` or `setup hermes <profile>…`. */
   async setup({ args, flags }) {
     const [platform, ...rest] = args;
-    if (platform !== "claude-code") fail("usual-base setup claude-code <project folder> [--name NAME] [--base BASE] [--wake] [--remove]");
+    if (platform === "hermes") return (await import("./hermes.mjs")).setupHermes({ args: rest, flags });
+    if (platform !== "claude-code") fail("usual-base setup claude-code <project folder> | hermes <profile>… [--name NAME] [--base BASE] [--wake] [--remove]");
     return (await import("./claude-code.mjs")).setupClaudeCode({ args: rest, flags });
   },
 
   /** What an agent platform's hooks run. Today: `hook claude-code`, reading the hook's JSON on stdin. */
   async hook({ args }) {
-    if (args[0] === "claude-code") return (await import("./claude-code.mjs")).claudeCodeHook();
+    if (args[0] === "claude-code") return (await import("./claude-code.mjs")).claudeCodeHook(args);
   },
 
   /** Wakes agents when someone posts in their rooms; `relay install | uninstall | status`. */

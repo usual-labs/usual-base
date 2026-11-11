@@ -4,9 +4,10 @@
 import { randomBytes } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { basename, dirname, join, relative } from "node:path";
-import { fail, gitTry, server, shown, token } from "./core.mjs";
+import { call, fail, server, shown, token } from "./core.mjs";
 import { folderName } from "./bases.mjs";
-import { BRAKE_AFTER, head, markRead, memberPath, members, messagesIn, news, places, post, pull, pullAtMostEvery, readerName, readMessage, roomNames, roomPath, ROOMS, slug, unread, yaml } from "./room-store.mjs";
+import { noteRoomPost } from "./claude-sessions.mjs";
+import { agentHere, BRAKE_AFTER, hasRemote, head, hostedId, markRead, memberPath, members, messagesIn, news, places, post, pull, pullAtMostEvery, readerName, readMessage, roomNames, roomPath, ROOMS, slug, unread, whenPushed, yaml } from "./room-store.mjs";
 
 const SHOWN_AT_MOST = 20;
 
@@ -104,13 +105,32 @@ async function say(base, args, flags) {
     `---\nfrom: ${yaml(reader)}\nat: ${at.toISOString()}\n${seen ? `seen: ${seen}\n` : ""}${re ? `re: ${re}\n` : ""}---\n${text}\n`);
   const before = head(base);
   post(base, [path], `${room}: ${text.split("\n")[0].slice(0, 60)}`, reader);
+  const agent = agentHere();
+  if (agent?.platform === "claude-code" && agent.name === reader && !process.env.USUAL_BASE_RELAY) noteRoomPost(agent, basename(room));
   markRead(base, room, reader, all, before);
   console.log(`Posted to ${basename(room)}: ${relative(join(base, room), join(base, path))}`);
+  await announce(base, room, path);
   const meanwhile = unread(base, room, reader);
   if (meanwhile.fresh?.length) {
     console.log(`\nMeanwhile, ${meanwhile.fresh.length} new:\n`);
     print(base, room, meanwhile.fresh, {});
     markRead(base, room, reader, meanwhile.all);
+  }
+}
+
+/**
+ * Tells the server a message was pushed to its Base, so it wakes the room's members that live on other platforms
+ * (a Grok Bot, say). The server reads the message itself; it's only told where to look.
+ */
+async function announce(base, room, path) {
+  const id = hasRemote(base) && hostedId(base);
+  if (!id) return;
+  try {
+    await call(`/api/bases/${id}/rooms/posted`, {
+      method: "POST", body: { room: basename(room), file: basename(path) }, signal: AbortSignal.timeout(5000),
+    });
+  } catch (error) {
+    console.error(`${server} couldn't be told to wake members elsewhere: ${error.message}`);
   }
 }
 
@@ -129,10 +149,9 @@ async function wait(base, args, flags) {
   };
   let found = start.fresh ?? [];
   if (!found.length) {
-    const origin = gitTry(["-C", base, "remote", "get-url", "origin"]).stdout.trim();
-    const hosted = origin.match(/^(https?:\/\/[^/]+)\/git\/([a-z0-9][a-z0-9._-]*)\.git$/);
-    found = hosted && hosted[1] === server && token() && typeof WebSocket === "function"
-      ? await viaPushEvents(hosted[2], deadline, check)
+    const id = hostedId(base);
+    found = id && typeof WebSocket === "function"
+      ? await viaPushEvents(id, deadline, check)
       : await byPolling(deadline, Number(flags.every) > 0 ? Number(flags.every) : 15, check);
   }
   if (!found.length) {
@@ -227,5 +246,34 @@ async function newsCommand(base, args, flags) {
   }
 }
 
-export const roomActions = { list, create, read, say, wait, join: joinRoom, leave: leaveRoom, news: newsCommand };
+/**
+ * `room watch`: never exits; prints one line per new message from others in your rooms, marking it read, so a
+ * Claude Code plugin monitor turns each line into a notification. Hosted Bases push events; others are polled.
+ */
+async function watchRooms(base, args, flags) {
+  const reader = readerName(base, flags);
+  const show = () => {
+    pull(base);
+    for (const name of roomNames(base)) {
+      const room = join(ROOMS, name);
+      if (!members(base, room).some((m) => m.name === reader)) continue;
+      const { all, fresh } = unread(base, room, reader);
+      if (fresh === null) {
+        markRead(base, room, reader, all); // joined before watching: from now on
+        continue;
+      }
+      for (const path of fresh) {
+        const m = readMessage(base, room, path);
+        const body = m.body.replace(/\s+/g, " ").slice(0, 400);
+        console.log(`Usual Base room "${name}", from ${m.from} (${m.file}): ${body}`);
+      }
+      if (fresh.length) markRead(base, room, reader, all);
+    }
+  };
+  show();
+  whenPushed(base, Number(flags.every) > 0 ? Number(flags.every) : 5, show);
+  return new Promise(() => {});
+}
+
+export const roomActions = { list, create, read, say, wait, watch: watchRooms, join: joinRoom, leave: leaveRoom, news: newsCommand };
 

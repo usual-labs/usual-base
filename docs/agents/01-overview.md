@@ -41,13 +41,37 @@ conflict; `room join | leave`. `room news` lists what's new in your rooms and pr
 adds who you are and how to treat messages); it pulls at most every 30 s. The loop brake: no wake once the last 10
 messages all came from members. `sync -m` commits every change under the writer's name. `cli/lib/claude-code.mjs`:
 `setup claude-code <folder>` registers an agent (`config.agents`: platform, folder, name, Base, wake, Claude's path)
-and puts one hook command (SessionStart and UserPromptSubmit) into `.claude/settings.local.json` at the repository
-root and in nested repositories, kept out of git with `.git/info/exclude`; `hook claude-code` reads the hook JSON
-and speaks for the deepest set-up project above the session's folder. `cli/lib/relay.mjs`: `relay` wakes agents set
+and installs the `usual-base` Claude Code plugin (`plugins/usual-base/`, marketplace `.claude-plugin/`) with
+`--scope local` at the repository root and in nested repositories, so it's on for that project only. The plugin's
+SessionStart and SessionEnd hooks run `hook claude-code`, and its monitor runs `hook claude-code watch`, which shows
+each new room message in an open session; both speak for the deepest set-up project above the session's folder.
+Hooks that earlier versions wrote into `.claude/settings.local.json` are removed on setup. Inside a set-up project, room commands use
+that project's agent name and Base without flags (`agentHere` in `room-store.mjs`), so an open session can read and
+post on request. Its hooks (also SessionEnd) record open sessions and which session last posted in each room
+(`claude-sessions.mjs`); the relay leaves replies to that session while it's open (a prompt within the hour) and
+resumes it with `--resume` once it's closed. `cli/lib/relay.mjs`: `relay` wakes agents set
 up with `--wake`: on a push event (hosted) or a poll it runs `claude -p` in the project, one session per room
 (`--session-id`, then `--resume`), with `--add-dir` the Base and `--allowedTools` `Bash(usual-base *)`,
 `Read`/`Edit` under the Base; never for the agent's own message or messages it already read, one run at a time, at
 most 20 an hour; `relay install` makes it a launchd or systemd login service.
+
+**Hermes, and agents the server wakes (2026-11-11).** `cli/lib/hermes.mjs`: `setup hermes <profile>… | --all`
+registers Hermes Bots (profile, the Bot's workspace: its `terminal.cwd` when absolute, else
+`profiles/<p>/workspace`; name, Base, Hermes's path) and copies the skill into each profile's skills, which `update`
+and `doctor` cover. The relay wakes a Bot with `hermes -p <profile> chat --in ~ -c "Bot Chat" -Q --query-file -`,
+the new messages on stdin, in its workspace. Agents on hosted platforms are woken by the server (`cloud/src/wake/`):
+after `room say` pushes to a hosted Base, the CLI posts `{room, file}` to `/api/bases/:id/rooms/posted` (a token
+that can write the Base; 202, and a failure only prints a line). In the background the server reads that message
+from the repository (`Repos.readFile`, so an announcement can't invent one) and records it in `room_posts`, the
+brake's history. Then it calls each wake target (`wake_targets`, one per agent token of the Base's owner: platform,
+name in rooms, address, sealed key) whose token isn't revoked and covers the Base, whose name has a member file and
+isn't the author. It applies the brake (the last 10 recorded posts all by members) and 20 wakes an hour, tries each
+call 3 times (after 2 s and 8 s), and shows the result on the dashboard. Keys are sealed with AES-GCM under a key
+derived from `BETTER_AUTH_SECRET` (HKDF). A platform is one module implementing `WakePlatform.deliver`;
+`grok-bot.ts` POSTs the routine's address with the key as a Bearer token and the event as JSON: Base, room, message
+excerpt, agent, and `read` and `reply` commands quoted for the shell. The dashboard has "Wake it" per agent token
+(`/agents/:id/wake`) and a Grok Bot setup prompt on Connect an agent. `room wait`, `room watch` and the relay share
+`hostedId` and `whenPushed` in `room-store.mjs`.
 
 **Formatting bar (2026-11-08).** In Edit mode, selecting text shows a bar of format buttons above it, on Liquid
 Glass. The Format menu has the same commands. Each one toggles: it adds the Markdown markers, or takes them off when
@@ -181,6 +205,23 @@ to notes from the Base's root). The one-time setup is in `references/setup.md` (
   post, read the room, replied in 14 s ("pong — Hello from the Base", `seen` set), read a note by its root path,
   appended a line to it and saved it with `sync -m`; both commits are under the agent's name, and nothing in the
   project changed. Not run: `relay install` (only `--dry-run`), Linux.
+- **Hermes setup and waking (2026-11-11):** a 17-check script (a stand-in `hermes`, a fake `~/.hermes` with two
+  profiles, the relay polling every second) passed: unknown profiles and `--name` with several Bots refused; `--all`
+  registers both with the right workspace; the skill in each profile, kept current by `update`; room commands from
+  a workspace speak as its Bot; a person's message wakes only the member Bot, once, with
+  `hermes -p alpha chat --in ~ -c "Bot Chat" -Q --query-file -` in its workspace and the messages on stdin; its reply
+  posts as the Bot and doesn't wake it; `--remove`. Not run on the Hermes server yet: the maintainer wants it set up
+  from base.usual.dev after the deploy.
+- **Grok Bot waking (2026-11-11):** a 33-check script (three CLI homes, a local stand-in for the routine) passed on
+  the Node server and `wrangler dev`: the form refuses a non-https address, shows where it wakes but never the key,
+  and stores the key sealed (`v1:…`, checked on Node). A person's `room say` calls the routine once (829 ms after
+  `say` started on Node, 2 s on Cloudflare) with the Bearer key and the event, and its `read` and `reply` commands
+  work as given. No call for the Bot's own reply, a room it isn't in, or an announced file that isn't in the Base;
+  an announcement without a token is refused. The brake (the Bot's reply and 9 of another member's: 8 calls, then
+  none); a routine answering 500 tried three times, 2 s and 8 s apart, shown as HTTP 500; 20 wakes in the hour, then
+  none; "Stop waking it". Afterwards rooms 31 (plain and Node), Hermes 17, Claude Code 42 and end-to-end 47 still
+  pass, and the relay woke on a push event 196 ms after the post. Not tried: a real Grok Bot, the deploy (migration
+  `0001_wake-targets`).
 - **CLI without a server (2026-11-09):** a script with the server address on a closed port passed 12 checks:
   grouped help, the skill installed from the checkout byte for byte, `import --to` a bare repository (snapshot
   with `.gitignore`, and `--history` of a subfolder), a second import into a repository with history refused

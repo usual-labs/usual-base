@@ -107,5 +107,17 @@
   like git's token helper, names Node's real path, so moving Node means running setup again.
 - **Room commands pull before they look for the room.** A room someone else just started isn't in the clone until
   then; `read`, `say`, `wait`, `join` and `leave` all pull first.
+- **Plugin monitors are experimental.** Not documented: line limits, restarts, and whether a line wakes an idle
+  session; an unknown key in `monitors.json` stops the plugin loading. The monitor checks in every minute, and the
+  relay treats a project as having an open session only while it does.
+- **Only `room say` wakes agents the server wakes.** The server hears of a message from the CLI after its push; a
+  message pushed with plain git, or pushed later by `usual-base sync` after `say` couldn't push, isn't announced,
+  so a Grok Bot member isn't woken for it.
+- **One wake target per agent token.** A user's Grok Bots share one computer, so one CLI config and token: only one
+  of them can be woken today.
+- **Saved wake keys depend on `BETTER_AUTH_SECRET`.** Rotating it makes them unreadable; deliveries then fail
+  ("failed: …" on the dashboard) until each key is saved again.
+- **The hourly wake limit can let one extra through** when two posts arrive at once: both read the target's recent
+  wakes before either writes.
 - **The served CLI is a bundle, not `cli/usual-base.mjs`.** Compare a downloaded CLI with
   `cloud/src/generated/files.ts` (after `node scripts/embed.mjs`), not with the source files.

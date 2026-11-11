@@ -1,0 +1,11 @@
+{
+  "name": "usual-labs",
+  "owner": { "name": "Usual Labs" },
+  "plugins": [
+    {
+      "name": "usual-base",
+      "source": "./plugins/usual-base",
+      "description": "Usual Base rooms in Claude Code: who this project's agent is, what's new in its rooms, and new messages as they arrive."
+    }
+  ]
+}

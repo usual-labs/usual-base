@@ -1,0 +1,7 @@
+[
+  {
+    "name": "usual-base-rooms",
+    "command": "\"${CLAUDE_PLUGIN_ROOT}/bin/usual-base-plugin\" watch",
+    "description": "New messages in this project's Usual Base rooms"
+  }
+]
